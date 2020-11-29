@@ -63,8 +63,12 @@ def spisok_comand(bot,
             reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
     if bot.message.text == button_currency:
+        receive = requests.get("https://www.cbr-xml-daily.ru/daily_json.js")
+        data = json.loads(receive.text)
+        text="<b>%s</b>-<i>%s</i>\n<b>%s</b>-<i>%s</i>"%(data["Valute"]["USD"]["Name"],data["Valute"]["USD"]["Value"],data["Valute"]["EUR"]["Name"],data["Valute"]["EUR"]["Value"])
         currency_keyboard = ReplyKeyboardMarkup(
             [["Определенная валюта сегодня"], ["Курс валюты в выбранные даты"], [button_menu]])
+        bot.message.reply_text(text=text,parse_mode=ParseMode.HTML)
         bot.message.reply_text(text="Вы находитесь в меню динамики валюты\nНажмите на нужную вам команду",
                                reply_markup=currency_keyboard)
         return "currency menu"
@@ -100,20 +104,22 @@ def currency_spisok_command(bot, update):  # Перенаправляет по �
     letter_code.clear()
     units.clear()
     rate.clear()
-    if bot.message.text == "Определенная валюта сегодня":
-        receive = requests.get("https://www.cbr-xml-daily.ru/daily_json.js")
-        data = json.loads(receive.text)
-        for valute in data["Valute"]:
+    receive = requests.get("https://www.cbr-xml-daily.ru/daily_json.js")
+    data = json.loads(receive.text)
+    spisok_currency.append([data["Valute"]["USD"]["Name"]])
+    letter_code.append([data["Valute"]["USD"]["CharCode"]])
+    spisok_currency.append([data["Valute"]["EUR"]["Name"]])
+    letter_code.append([data["Valute"]["EUR"]["CharCode"]])
+    for valute in data["Valute"]:
+        if data["Valute"]["%s" % valute]["Name"] != "Доллар США" and data["Valute"]["%s" % valute]["Name"] != "Евро":
             spisok_currency.append([data["Valute"]["%s" % valute]["Name"]])
+            letter_code.append([data["Valute"]["%s" % valute]["CharCode"]])
+    if bot.message.text == "Определенная валюта сегодня":
         my_keyboard = ReplyKeyboardMarkup(spisok_currency)
         bot.message.reply_text(text="Выберете валюту чтобы увидеть информацию по ней за сегодня",
                                reply_markup=my_keyboard)
         return "currency statistics"
     if bot.message.text == "Курс валюты в выбранные даты":
-        result = mdb.find_one({"_id": id_name})
-        for i in range(len(result["currency"])):  # создание клавиатуры из списка доступных валют
-            letter_code.append([result["letter code"][i]])
-            spisok_currency.append([result["currency"][i]])
         my_keyboard = ReplyKeyboardMarkup(spisok_currency)
         bot.message.reply_text(text="Выберете валюту чтобы увидеть информацию по ней за промежуток времени!",
                                reply_markup=my_keyboard)
@@ -136,11 +142,11 @@ def currency_statistics(bot, update):
         if value == data["Valute"]["%s" % valute]["Name"]:
             ind = valute
             continue
-    bot.message.reply_text(text="Валюта: %s\nСокращенное название: %s\nКоличество: %s\nКурс: %s рублей" % (
+    bot.message.reply_text(text="Валюта: <b>%s</b>\nСокращенное название: <b>%s</b>\nКоличество: <b>%s</b>\nКурс: <b>%s</b> <i>рублей</i>" % (
         data["Valute"]["%s" % ind]["Name"], data["Valute"]["%s" % ind]["CharCode"],
         data["Valute"]["%s" % ind]["Nominal"],
-        data["Valute"]["%s" % ind]["Value"]))
-    my_keyboard = ReplyKeyboardMarkup([[button_currency], [button_help, button_end]])
+        data["Valute"]["%s" % ind]["Value"]),parse_mode=ParseMode.HTML)
+    my_keyboard = ReplyKeyboardMarkup([["Обмен валюты"],[button_currency], [button_help, button_end]])
     bot.message.reply_text(text="Вы находитесь в главном меню", reply_markup=my_keyboard)
     return "spisok comand"
 
@@ -149,8 +155,8 @@ def date_input(bot, update):
     global value
     value = bot.message.text
     bot.message.reply_text(
-        text="Введите диапозон дат как на примере:<2020-10-25 2020-11-5>\n<Год-месяц-число Год-месяц-число>\nБез треугольных скобок!!!",
-        reply_markup=ReplyKeyboardRemove())
+        text="Введите диапозон дат как на примере:<b>2020-10-25 2020-11-5</b>\n<i>Год-месяц-число Год-месяц-число</i>\nБез треугольных скобок!!!",
+        reply_markup=ReplyKeyboardRemove(),parse_mode=ParseMode.HTML)
     return "currency certain statistics"
 
 # Вывод статистики за заданный промежуток времени
@@ -196,7 +202,7 @@ def currency_certain_statistics(bot, update):
     # for i,item in enumerate(date):
     #     date[i]+=" курс: %s рубля"%spisok[i]
     # bot.message.reply_text(text="\n".join(date))
-    my_keyboard = ReplyKeyboardMarkup([[button_currency], [button_menu, button_end]])
+    my_keyboard = ReplyKeyboardMarkup([["Обмен валюты"],[button_currency], [button_menu, button_end]])
     bot.message.reply_text(text="Выбери команду", reply_markup=my_keyboard)
 
     return "spisok comand"
@@ -212,8 +218,9 @@ def exchange(bot,update):
         bot.message.reply_text(text="Выберите команду!")
         return "exchange"
     if bot.message.text=="Ближайшие обменники":
-        bot.message.reply_text(text="Чтобы отправить нам геопозицию нажмите на скрепку,затем прикрепить геопозицию",
-        reply_markup=ReplyKeyboardRemove())
+        bot.message.reply_text(text="Чтобы отправить нам геопозицию нажмите на <b>скрепку</b>,затем <b>прикрепить геопозицию</b>",
+        reply_markup=ReplyKeyboardRemove(),
+        parse_mode=ParseMode.HTML)
         return "get location"
 
 
