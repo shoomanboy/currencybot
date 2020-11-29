@@ -1,4 +1,4 @@
-from telegram import bot, ReplyKeyboardRemove, ReplyKeyboardMarkup, PhotoSize
+from telegram import bot, ReplyKeyboardRemove, ReplyKeyboardMarkup, PhotoSize,ParseMode
 from telegram.ext import Updater, CallbackContext, Filters, MessageHandler, ConversationHandler, CommandHandler, \
     CallbackQueryHandler
 from settings_bot_currency import TG_Token
@@ -21,11 +21,12 @@ button_help = "/help"
 button_end = "/end"
 button_menu = "/menu"
 spisok_currency = []
-letter_code = []
-units = []
-rate = []
-value = 0
+letter_code = []  # сокращенное название валюты
+units = []  # колличество купюр
+rate = []   # курс валюты
+value = 0  # поиск выбранной валюты для ее статистике --->в функцие)
 button_location = "Отправить геопозицию"
+button_exchange = "Обмен валюты"
 
 ind = -1  # Переменная для сохранения номера элемента в БД по валютам
 
@@ -34,8 +35,11 @@ def dontknow(bot, update):  # Если непривально введена к�
     bot.message.reply_text(text='Я вас не понимаю,нажмите на команду')
 
 
+"""Старт"""
+
+
 def message_handler(bot, update):  # Обработчик сообщений после ввода команды запуска
-    my_keyboard = ReplyKeyboardMarkup([[button_currency], [button_help], [button_end,button_location]])
+    my_keyboard = ReplyKeyboardMarkup([[button_exchange], [button_currency], [button_end]])
     name = bot.message.chat.first_name
     bot.message.reply_text(
         text="Привет %s, не хочешь узнать курсы валют и их динамику?\nЕсли да,то переходи по кнопке нижу!" % name,
@@ -43,8 +47,12 @@ def message_handler(bot, update):  # Обработчик сообщений п�
     return "spisok comand"
 
 
-def spisok_comand(bot,update):  # данная функция перенаправляет пользователя на нужное направление в зависимости его запроса
-    my_keyboard = ReplyKeyboardMarkup([[button_currency], [button_help, button_end]])
+"""Основной список команд"""
+
+
+def spisok_comand(bot,
+                  update):  # данная функция перенаправляет пользователя на нужное направление в зависимости его запроса
+    my_keyboard = ReplyKeyboardMarkup([[button_exchange], [button_currency], [button_end]])
     if bot.message.text == button_help:
         bot.message.reply_text(
             text="Данный бот способен показывать курсы валют по вашему выбору и также может анализировать ее динамику\nКоманда: 'Валюты' перенаправит вас в меню по валютам\nКоманда: '/end' завершит диалог с ботом  ")
@@ -63,9 +71,19 @@ def spisok_comand(bot,update):  # данная функция перенапра
     if bot.message.text == button_menu:
         bot.message.reply_text(text="Вы находитесь в главном меню!", reply_markup=my_keyboard)
         return "spisok comand"
-    if bot.message.text == button_location:
-        bot.message.reply_text(text="Чтобы отправить нам геопозицию нажмите на скрепку,затем прикрепить геопозицию",reply_markup=ReplyKeyboardRemove())
-        return "get location"
+    # if bot.message.text == button_location:
+    #     bot.message.reply_text(text="Чтобы отправить нам геопозицию нажмите на скрепку,затем прикрепить геопозицию",
+    #                            reply_markup=ReplyKeyboardRemove())
+    #     return "get location"
+    if bot.message.text=="Обмен валюты":
+        my_keyboard = ReplyKeyboardMarkup([["Ближайшие обменники"], [button_menu]])
+        bot.message.reply_text(text=get_html(params="text"),reply_markup=my_keyboard,parse_mode=ParseMode.HTML)
+        bot.message.reply_text(text="По нажатию кнопки '<b>Ближайшие обменники</b>' вы увидите курс покупки и продажи ",
+                               reply_markup=my_keyboard, parse_mode=ParseMode.HTML)
+        return "exchange"
+
+
+"""Основная развилка по курсу валют"""
 
 
 def currency_spisok_command(bot, update):  # Перенаправляет по направления блока (валюта)
@@ -106,6 +124,9 @@ def currency_spisok_command(bot, update):  # Перенаправляет по �
         return "spisok comand"
 
 
+"""Статистика за промежуток времени"""
+
+
 def currency_statistics(bot, update):
     global ind, value
     value = bot.message.text
@@ -123,7 +144,7 @@ def currency_statistics(bot, update):
     bot.message.reply_text(text="Вы находитесь в главном меню", reply_markup=my_keyboard)
     return "spisok comand"
 
-
+# Создание диапазона дат
 def date_input(bot, update):
     global value
     value = bot.message.text
@@ -132,7 +153,7 @@ def date_input(bot, update):
         reply_markup=ReplyKeyboardRemove())
     return "currency certain statistics"
 
-
+# Вывод статистики за заданный промежуток времени
 def currency_certain_statistics(bot, update):
     chat_id = bot.message.chat_id  # сохранение id
     spisok = []
@@ -181,21 +202,32 @@ def currency_certain_statistics(bot, update):
     return "spisok comand"
 
 
+"""Обмен валюты"""
+
+
+def exchange(bot,update):
+    my_keyboard=ReplyKeyboardMarkup([["Курс обменников"],["Ближайшие обменники"],[button_menu]])
+    if bot.message.text=="Курс обменников":
+        bot.message.reply_text(text=get_html(params="text"),reply_markup=my_keyboard,parse_mode=ParseMode.HTML)
+        bot.message.reply_text(text="Выберите команду!")
+        return "exchange"
+    if bot.message.text=="Ближайшие обменники":
+        bot.message.reply_text(text="Чтобы отправить нам геопозицию нажмите на скрепку,затем прикрепить геопозицию",
+        reply_markup=ReplyKeyboardRemove())
+        return "get location"
+
+
 """Получаем геопозицию пользователя"""
 
 
 def get_location(bot, update):
     print(bot.message.location)
-    location=bot.message.location
-    latitude=location["latitude"]
-    longitude=location["longitude"]
-    print(latitude,longitude)
-    bot.message.reply_text(text="Сейчас подберем ближайший к вам обменник {}".format(bot.message.chat.first_name))
-    return"spisok comand"
-
-
-"""Обмен валюты"""
-
+    location = bot.message.location
+    latitude = location["latitude"]
+    longitude = location["longitude"]
+    print(latitude, longitude)
+    bot.message.reply_text(text="Сейчас подберем ближайшие к вам обменники %s" % bot.message.chat.first_name)
+    bot.message.reply_text(text=get_html("distance"), parse_mode=ParseMode.HTML)
 
 
 def main():  # Основные параметры работы бота(Токен,диалог)
@@ -204,12 +236,18 @@ def main():  # Основные параметры работы бота(Ток�
     start_handler = updater.dispatcher.add_handler(
         ConversationHandler(entry_points=[CommandHandler("start", message_handler)],
                             states={
-                                "spisok comand": [MessageHandler(Filters.regex("/help|/end|Валюты|/menu|Отправить геопозицию"),spisok_comand)],
-                                "currency menu": [MessageHandler(Filters.regex("Определенная валюта сегодня|Курс валюты в выбранные даты|/menu"),currency_spisok_command)],
+                                "spisok comand": [
+                                    MessageHandler(Filters.regex("/help|/end|Валюты|/menu|Обмен валюты"),
+                                                   spisok_comand)],
+                                "currency menu": [MessageHandler(
+                                    Filters.regex("Определенная валюта сегодня|Курс валюты в выбранные даты|/menu"),
+                                    currency_spisok_command)],
                                 "currency statistics": [MessageHandler(Filters.text, currency_statistics)],
                                 "date input": [MessageHandler(Filters.text, date_input)],
-                                "currency certain statistics": [MessageHandler(Filters.text, currency_certain_statistics)],
-                                "get location": [MessageHandler(Filters.location, get_location)]
+                                "currency certain statistics": [
+                                    MessageHandler(Filters.text, currency_certain_statistics)],
+                                "get location": [MessageHandler(Filters.location, get_location)],
+                                "exchange":[MessageHandler(Filters.regex("Курс обменников|Ближайшие обменники|/menu"),exchange)]
                             },
                             fallbacks=[MessageHandler(Filters.text | Filters.video | Filters.document | Filters.photo,
                                                       dontknow)]

@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 from fuzzywuzzy import fuzz
 import math
 from length import length
+from termcolor import colored
 
 URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_="
 
@@ -19,8 +20,17 @@ spisok_rate = []
 distances=[]
 names=[]
 rates=[]
+banks_inf = []
+banks=[]
+spisok_buy=[]
+spisok_sell=[]
+# переменные для нахождения макс и мин продажи ,и нахождения ближ выгодной покупки или продажи
+maxsell=0
+minbuy=0
+maxsellnear=0
+minbuynear=0
 
-def get_html():
+def get_html(params):
     url = URL
     headers = {
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.77 YaBrowser/20.11.0.817 Yowser/2.5 Safari/537.36",
@@ -28,17 +38,17 @@ def get_html():
     }
     req = requests.get(url, headers)
     # print(req.text)
-    return get_content(req)
+    params = params
+    return get_content(req,params)
 
 
 """Создаем словарь с нужной нам информацией для болле просто использования """
 
 
-def get_content(req):
+def get_content(req,params):
     k = 0
     exist = 1
     content = json.loads(req.text)
-    banks = []
     metro = []
     """Делаем собственный упрощенный словарь где уже будут нудные элементы"""
     for i in content["banks"]:
@@ -65,42 +75,64 @@ def get_content(req):
         exist = 1
         k += 1
     # print(banks)
-    # print(k)
-    return banks_count(banks)
+    return banks_count(banks,params)
+
 
 
 """функция выводящая урощенный список банков для порльзователя"""
 
 
-def banks_count(banks):
-
+def banks_count(banks,params):
     """Сортировка банков"""
     for j in spisok:
         for i in range(len(banks)):
             if fuzz.partial_token_sort_ratio(j, banks[i]["bank"]) >= 90:
-                spisok_rate.append("%s- %s / %s" % (j, banks[i]["sell"], banks[i]["buy"]))
+                spisok_rate.append("<i>%s</i>- <b>%s</b> / <b>%s</b>" % (j, banks[i]["sell"], banks[i]["buy"]))
                 # print(j, '  ', banks[i]["bank"])
                 break
-    print("\n".join(spisok_rate))
-    return get_distance(banks)
+    # print("\n".join(spisok_rate)) # Список доступных банков и их курсов
+    text="\n".join(spisok_rate)
+    if params=="text":
+        # print(text)
+        return text
+    elif params=="distance":
+        return get_distance(banks,params="distance")
+# print(get_html("text"))
+
+"""нахождение ближайших банков по координатам"""
 
 
-def get_distance(banks):
+def get_distance(banks,params):
+    spisok_text=[]
     for i in range(len(banks)):
         distances.append(length(latitude, longitude, banks[i]["latitude"], banks[i]["longitude"]))
     distances.sort(reverse=False)
-    print(distances[:5])
-    for i in range(0,5):
-        for j in range(len(banks)):
-            # print(length(latitude,longitude,banks[j]["latitude"],banks[i]["longitude"]))
-            if distances[i] == length(latitude,longitude,banks[j]["latitude"],banks[j]["longitude"]):
-                names.append(banks[j]["bank"])
-                rates.append([banks[j]["sell"],banks[j]["buy"]])
-    print(names)
-    print(rates)
+    print(distances[:7])
+    for i in range(0,7):
+        try:  # Проверка на существование элемента
+            distances[i]
+        except IndexError:
+            break
+        else:
+            for j in range(len(banks)):
+                # print(length(latitude,longitude,banks[j]["latitude"],banks[i]["longitude"]))
+                if distances[i] == length(latitude,longitude,banks[j]["latitude"],banks[j]["longitude"]):
+                    names.append(banks[j]["bank"])
+                    rates.append([banks[j]["sell"],banks[j]["buy"]])
+                    spisok_rate.append([banks[j]["bank"],banks[j]["sell"],banks[j]["buy"]])
+                    spisok_text.append("<i>%s</i>- <b>%s</b> / <b>%s</b> (<i>%s</i>км)"%(banks[j]["bank"],banks[j]["sell"],banks[j]["buy"],length(latitude,longitude,banks[j]["latitude"],banks[j]["longitude"])))
+    if params=="distance":
+        text="\n".join(spisok_text)
+        return text
+    if params=="distance_buy":
+        pass
+    # print(names)
+    # print(rates)
 
-if __name__ == "__main__":
-    get_html()
+
+if __name__ == '__main__':
+    get_html(params="text")
+
 
 # for i in content["banks"]:
 # print("Банк: ",content["banks"][k]["name"])
