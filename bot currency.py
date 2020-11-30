@@ -1,4 +1,5 @@
-from telegram import bot, ReplyKeyboardRemove, ReplyKeyboardMarkup, PhotoSize,ParseMode
+from telegram import bot, ReplyKeyboardRemove, ReplyKeyboardMarkup, PhotoSize, ParseMode, InlineKeyboardMarkup, \
+    InlineKeyboardButton
 from telegram.ext import Updater, CallbackContext, Filters, MessageHandler, ConversationHandler, CommandHandler, \
     CallbackQueryHandler
 from settings_bot_currency import TG_Token
@@ -6,7 +7,7 @@ from settings_bot_currency import id_name, mdb
 import os
 from PIL import Image
 import parcer2
-from parcer2 import URL, get_html, get_content, banks_count
+from parcer2 import URL, get_html, get_content, banks_count, get_distance
 import requests
 import pandas as pd
 import json
@@ -23,7 +24,7 @@ button_menu = "/menu"
 spisok_currency = []
 letter_code = []  # сокращенное название валюты
 units = []  # колличество купюр
-rate = []   # курс валюты
+rate = []  # курс валюты
 value = 0  # поиск выбранной валюты для ее статистике --->в функцие)
 button_location = "Отправить геопозицию"
 button_exchange = "Обмен валюты"
@@ -65,10 +66,12 @@ def spisok_comand(bot,
     if bot.message.text == button_currency:
         receive = requests.get("https://www.cbr-xml-daily.ru/daily_json.js")
         data = json.loads(receive.text)
-        text="<b>%s</b>-<i>%s</i>\n<b>%s</b>-<i>%s</i>"%(data["Valute"]["USD"]["Name"],data["Valute"]["USD"]["Value"],data["Valute"]["EUR"]["Name"],data["Valute"]["EUR"]["Value"])
+        text = "<b>%s</b>-<i>%s</i>\n<b>%s</b>-<i>%s</i>" % (
+        data["Valute"]["USD"]["Name"], data["Valute"]["USD"]["Value"], data["Valute"]["EUR"]["Name"],
+        data["Valute"]["EUR"]["Value"])
         currency_keyboard = ReplyKeyboardMarkup(
             [["Определенная валюта сегодня"], ["Курс валюты в выбранные даты"], [button_menu]])
-        bot.message.reply_text(text=text,parse_mode=ParseMode.HTML)
+        bot.message.reply_text(text=text, parse_mode=ParseMode.HTML)
         bot.message.reply_text(text="Вы находитесь в меню динамики валюты\nНажмите на нужную вам команду",
                                reply_markup=currency_keyboard)
         return "currency menu"
@@ -79,9 +82,9 @@ def spisok_comand(bot,
     #     bot.message.reply_text(text="Чтобы отправить нам геопозицию нажмите на скрепку,затем прикрепить геопозицию",
     #                            reply_markup=ReplyKeyboardRemove())
     #     return "get location"
-    if bot.message.text=="Обмен валюты":
+    if bot.message.text == "Обмен валюты":
         my_keyboard = ReplyKeyboardMarkup([["Ближайшие обменники"], [button_menu]])
-        bot.message.reply_text(text=get_html(params="text"),reply_markup=my_keyboard,parse_mode=ParseMode.HTML)
+        bot.message.reply_text(text=get_html(params="text"), reply_markup=my_keyboard, parse_mode=ParseMode.HTML)
         bot.message.reply_text(text="По нажатию кнопки '<b>Ближайшие обменники</b>' вы увидите курс покупки и продажи ",
                                reply_markup=my_keyboard, parse_mode=ParseMode.HTML)
         return "exchange"
@@ -142,22 +145,25 @@ def currency_statistics(bot, update):
         if value == data["Valute"]["%s" % valute]["Name"]:
             ind = valute
             continue
-    bot.message.reply_text(text="Валюта: <b>%s</b>\nСокращенное название: <b>%s</b>\nКоличество: <b>%s</b>\nКурс: <b>%s</b> <i>рублей</i>" % (
-        data["Valute"]["%s" % ind]["Name"], data["Valute"]["%s" % ind]["CharCode"],
-        data["Valute"]["%s" % ind]["Nominal"],
-        data["Valute"]["%s" % ind]["Value"]),parse_mode=ParseMode.HTML)
-    my_keyboard = ReplyKeyboardMarkup([["Обмен валюты"],[button_currency], [button_help, button_end]])
+    bot.message.reply_text(
+        text="Валюта: <b>%s</b>\nСокращенное название: <b>%s</b>\nКоличество: <b>%s</b>\nКурс: <b>%s</b> <i>рублей</i>" % (
+            data["Valute"]["%s" % ind]["Name"], data["Valute"]["%s" % ind]["CharCode"],
+            data["Valute"]["%s" % ind]["Nominal"],
+            data["Valute"]["%s" % ind]["Value"]), parse_mode=ParseMode.HTML)
+    my_keyboard = ReplyKeyboardMarkup([["Обмен валюты"], [button_currency], [button_help, button_end]])
     bot.message.reply_text(text="Вы находитесь в главном меню", reply_markup=my_keyboard)
     return "spisok comand"
+
 
 # Создание диапазона дат
 def date_input(bot, update):
     global value
     value = bot.message.text
     bot.message.reply_text(
-        text="Введите диапозон дат как на примере:<b>2020-10-25 2020-11-5</b>\n<i>Год-месяц-число Год-месяц-число</i>\nБез треугольных скобок!!!",
-        reply_markup=ReplyKeyboardRemove(),parse_mode=ParseMode.HTML)
+        text="Введите диапозон дат как на примере:'<b>2020-10-25 2020-11-5</b>'\n'<i>Год-месяц-число Год-месяц-число</i>'\nБез ковычек!!!",
+        reply_markup=ReplyKeyboardRemove(), parse_mode=ParseMode.HTML)
     return "currency certain statistics"
+
 
 # Вывод статистики за заданный промежуток времени
 def currency_certain_statistics(bot, update):
@@ -172,8 +178,11 @@ def currency_certain_statistics(bot, update):
     code = str(letter_code[ind]).replace("['", "")  # Удаление лишних символов
     code = code.replace("']", "")  # Удаление лишних символов
     currency_start_date, currency_end_date = map(str, bot.message.text.split(" "))
-    currency_start_date = pd.to_datetime(currency_start_date)  # Преобразование в дату
-    currency_end_date = pd.to_datetime(currency_end_date)  # Преобразование в дату
+    try:
+        currency_start_date = pd.to_datetime(currency_start_date)  # Преобразование в дату
+        currency_end_date = pd.to_datetime(currency_end_date)  # Преобразование в дату
+    except ValueError:
+        bot.message.reply_text(text="Введенная вами дата не существует или неккоректна\nВведите новые даты")
     daterange = pd.date_range(currency_start_date, currency_end_date)  # Создание диапазона по датам
     for single_date in daterange:
         receive = requests.get("https://www.cbr-xml-daily.ru/archive/%s/daily_json.js" % (
@@ -189,7 +198,7 @@ def currency_certain_statistics(bot, update):
     """Построение графика в питоне """
     df = pd.DataFrame({"date": date, "value": spisok})  # Построение графика в pandas с помощью dataframe
     df["date"] = pd.to_datetime(df["date"])  # Присвоение датам значение даты
-    plt.plot(df["date"], df["value"], lw=1, ls='-', marker='o', markersize=7)  # создание осей
+    plt.plot(df["date"], df["value"], lw=1, ls='-', marker='o', markersize=5)  # создание осей
     plt.title("График изменения валюты: %s" % value)
     plt.ylabel("Курс валюты")
     plt.grid(True)
@@ -202,7 +211,7 @@ def currency_certain_statistics(bot, update):
     # for i,item in enumerate(date):
     #     date[i]+=" курс: %s рубля"%spisok[i]
     # bot.message.reply_text(text="\n".join(date))
-    my_keyboard = ReplyKeyboardMarkup([["Обмен валюты"],[button_currency], [button_menu, button_end]])
+    my_keyboard = ReplyKeyboardMarkup([["Обмен валюты"], [button_currency], [button_menu, button_end]])
     bot.message.reply_text(text="Выбери команду", reply_markup=my_keyboard)
 
     return "spisok comand"
@@ -211,16 +220,17 @@ def currency_certain_statistics(bot, update):
 """Обмен валюты"""
 
 
-def exchange(bot,update):
-    my_keyboard=ReplyKeyboardMarkup([["Курс обменников"],["Ближайшие обменники"],[button_menu]])
-    if bot.message.text=="Курс обменников":
-        bot.message.reply_text(text=get_html(params="text"),reply_markup=my_keyboard,parse_mode=ParseMode.HTML)
+def exchange(bot, update):
+    my_keyboard = ReplyKeyboardMarkup([["Курс обменников"], ["Ближайшие обменники"], [button_menu]])
+    if bot.message.text == "Курс обменников":
+        bot.message.reply_text(text=get_html(params="text"), reply_markup=my_keyboard, parse_mode=ParseMode.HTML)
         bot.message.reply_text(text="Выберите команду!")
         return "exchange"
-    if bot.message.text=="Ближайшие обменники":
-        bot.message.reply_text(text="Чтобы отправить нам геопозицию нажмите на <b>скрепку</b>,затем <b>прикрепить геопозицию</b>",
-        reply_markup=ReplyKeyboardRemove(),
-        parse_mode=ParseMode.HTML)
+    if bot.message.text == "Ближайшие обменники":
+        bot.message.reply_text(
+            text="Чтобы отправить нам геопозицию нажмите на <b>'скрепку'</b>,затем <b>'прикрепить геопозицию'</b>",
+            reply_markup=ReplyKeyboardRemove(),
+            parse_mode=ParseMode.HTML)
         return "get location"
 
 
@@ -228,13 +238,29 @@ def exchange(bot,update):
 
 
 def get_location(bot, update):
-    print(bot.message.location)
     location = bot.message.location
     latitude = location["latitude"]
     longitude = location["longitude"]
     print(latitude, longitude)
     bot.message.reply_text(text="Сейчас подберем ближайшие к вам обменники %s" % bot.message.chat.first_name)
-    bot.message.reply_text(text=get_html("distance"), parse_mode=ParseMode.HTML)
+    bot.message.reply_text(text=get_distance(get_html("distance"), "distance", latitude, longitude),
+                           parse_mode=ParseMode.HTML,reply_markup=inline_sort())
+    return "sort"
+
+
+"""кнопки с покупкой продажей inline"""
+
+
+def inline_sort():
+    keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),
+                InlineKeyboardButton("продажа", callback_data="продажа")]]
+    return InlineKeyboardMarkup(keyboard)
+
+def inline_sort_callback(bot,update):
+    query=bot.callback_query
+    data=query.data
+    if data=="покупка":
+        query.edit_message_text(text="sortiruy daun)))",reply_markup=inline_sort())
 
 
 def main():  # Основные параметры работы бота(Токен,диалог)
@@ -254,13 +280,16 @@ def main():  # Основные параметры работы бота(Ток�
                                 "currency certain statistics": [
                                     MessageHandler(Filters.text, currency_certain_statistics)],
                                 "get location": [MessageHandler(Filters.location, get_location)],
-                                "exchange":[MessageHandler(Filters.regex("Курс обменников|Ближайшие обменники|/menu"),exchange)]
+                                "exchange": [MessageHandler(Filters.regex("Курс обменников|Ближайшие обменники|/menu"),exchange)],
+                                 "sort":[CallbackQueryHandler(inline_sort_callback,"покупка")]
                             },
                             fallbacks=[MessageHandler(Filters.text | Filters.video | Filters.document | Filters.photo,
                                                       dontknow)]
                             )
 
     )
+    # inline_keyboard_handler=CallbackQueryHandler(callback=inline_sort_callback,pass_chat_data=True)
+    # updater.dispatcher.add_handler(inline_keyboard_handler)
     updater.start_polling()
     updater.idle()
 

@@ -2,7 +2,6 @@ import math
 from geopy.distance import geodesic
 
 
-
 def length(latitude, longitude, latitude1, longitude1):
     """применение формулы"""
     # R = 6373  # Radius of the earth
@@ -14,12 +13,10 @@ def length(latitude, longitude, latitude1, longitude1):
     # distance = R * c*1.6
     # # print(round(distance,1))
     """Применение geopy"""
-    selflocation=(latitude,longitude)
-    location=(latitude1,longitude1)
-    distance=geodesic(selflocation,location).kilometers
-    return round(distance,2)
-
-
+    selflocation = (latitude, longitude)
+    location = (latitude1, longitude1)
+    distance = geodesic(selflocation, location).kilometers
+    return round(distance, 2)
 
 
 if __name__ == "__main__":

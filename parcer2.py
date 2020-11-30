@@ -5,12 +5,10 @@ from fuzzywuzzy import fuzz
 import math
 from length import length
 from termcolor import colored
-
+from itertools import groupby
 URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_="
 
 """Получаем ссылку"""
-latitude = 55.845415
-longitude = 37.340476
 BANKS = 0
 spisok = ["Сбербанк", "АКБ ФОРА-БАНК", "Заубер Банк", "КБ Евроазиатский Инвестиционный Банк", "АКБ Трансстройбанк",
           "БАНК КРЕМЛЕВСКИЙ", "Банк БКФ", "КБ Евроазиатский Инвестиционный Банк", "КБ Спутник", "АКБ Ланта-Банк",
@@ -18,8 +16,6 @@ spisok = ["Сбербанк", "АКБ ФОРА-БАНК", "Заубер Банк
           "Банк ФК Открытие", "Газпромбанк ДО", "КБ Солидарность", "МТИ Банк", "НС Банк"]  # список банков
 spisok_rate = []
 distances=[]
-names=[]
-rates=[]
 banks_inf = []
 banks=[]
 spisok_buy=[]
@@ -29,7 +25,6 @@ maxsell=0
 minbuy=0
 maxsellnear=0
 minbuynear=0
-
 def get_html(params):
     url = URL
     headers = {
@@ -86,7 +81,7 @@ def banks_count(banks,params):
     """Сортировка банков"""
     for j in spisok:
         for i in range(len(banks)):
-            if fuzz.partial_token_sort_ratio(j, banks[i]["bank"]) >= 90:
+            if fuzz.partial_token_sort_ratio(j, banks[i]["bank"]) >= 90:  # Составление списка обменников с помощью совпадений
                 spisok_rate.append("<i>%s</i>- <b>%s</b> / <b>%s</b>" % (j, banks[i]["sell"], banks[i]["buy"]))
                 # print(j, '  ', banks[i]["bank"])
                 break
@@ -96,16 +91,20 @@ def banks_count(banks,params):
         # print(text)
         return text
     elif params=="distance":
-        return get_distance(banks,params="distance")
+        return banks
 # print(get_html("text"))
 
 """нахождение ближайших банков по координатам"""
 
 
-def get_distance(banks,params):
+def get_distance(banks,params,latitude,longitude):
+    names = []
+    rates = []
+    spisok_rate.clear()
+    coordinates=[]
     spisok_text=[]
     for i in range(len(banks)):
-        distances.append(length(latitude, longitude, banks[i]["latitude"], banks[i]["longitude"]))
+        distances.append(length(latitude,longitude,banks[i]["latitude"], banks[i]["longitude"]))
     distances.sort(reverse=False)
     print(distances[:7])
     for i in range(0,7):
@@ -118,17 +117,30 @@ def get_distance(banks,params):
                 # print(length(latitude,longitude,banks[j]["latitude"],banks[i]["longitude"]))
                 if distances[i] == length(latitude,longitude,banks[j]["latitude"],banks[j]["longitude"]):
                     names.append(banks[j]["bank"])
+                    coordinates.append([banks[j]["latitude"],banks[j]["longitude"]])
                     rates.append([banks[j]["sell"],banks[j]["buy"]])
                     spisok_rate.append([banks[j]["bank"],banks[j]["sell"],banks[j]["buy"]])
                     spisok_text.append("<i>%s</i>- <b>%s</b> / <b>%s</b> (<i>%s</i>км)"%(banks[j]["bank"],banks[j]["sell"],banks[j]["buy"],length(latitude,longitude,banks[j]["latitude"],banks[j]["longitude"])))
+
     if params=="distance":
-        text="\n".join(spisok_text)
+        text="\n".join(delete_copy(spisok_text))
+        names=delete_copy(names)
+        coordinates=delete_copy(coordinates)
+        rates=delete_copy(rates)
+        print(text)
         return text
     if params=="distance_buy":
         pass
     # print(names)
     # print(rates)
 
+
+"""Функция по удалению дубликатов в массиве(удаляет даже вложенные списки)"""
+
+
+def delete_copy(array):
+    array1=[el for el, _ in groupby(array)]
+    return array1
 
 if __name__ == '__main__':
     get_html(params="text")
