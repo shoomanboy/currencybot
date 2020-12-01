@@ -13,6 +13,7 @@ import pandas as pd
 import json
 import matplotlib.pyplot as plt
 import pymongo
+from emoji import emojize
 
 MONGODB_LINK = "mongodb+srv://shoomaher:7598621zhora@telegrambot.fls8z.mongodb.net/telegrambot?retryWrites=true&w=majority"
 MONGODB = "telegramcurrency"
@@ -43,7 +44,7 @@ def message_handler(bot, update):  # Обработчик сообщений п�
     my_keyboard = ReplyKeyboardMarkup([[button_exchange], [button_currency], [button_end]])
     name = bot.message.chat.first_name
     bot.message.reply_text(
-        text="Привет %s, не хочешь узнать курсы валют и их динамику?\nЕсли да,то переходи по кнопке нижу!" % name,
+        text="Привет %s,хочешь узнать курсы валют 💵💶 и их динамику📈?\nКонечно да, тогда переходи по кнопке ниже!" % name,
         reply_markup=my_keyboard)
     return "spisok comand"
 
@@ -56,7 +57,7 @@ def spisok_comand(bot,
     my_keyboard = ReplyKeyboardMarkup([[button_exchange], [button_currency], [button_end]])
     if bot.message.text == button_help:
         bot.message.reply_text(
-            text="Данный бот способен показывать курсы валют по вашему выбору и также может анализировать ее динамику\nКоманда: 'Валюты' перенаправит вас в меню по валютам\nКоманда: '/end' завершит диалог с ботом  ")
+            text="Данный бот способен показывать курсы валют 💵💶 по вашему выбору и также может анализировать ее динамику📈\nКоманда: 'Валюты' перенаправит вас в меню по валютам\nКоманда: '/end' завершит диалог с ботом  ")
         return "spisok comand"
     if bot.message.text == button_end:
         bot.message.reply_text(
@@ -66,7 +67,7 @@ def spisok_comand(bot,
     if bot.message.text == button_currency:
         receive = requests.get("https://www.cbr-xml-daily.ru/daily_json.js")
         data = json.loads(receive.text)
-        text = "<b>%s</b>-<i>%s</i>\n<b>%s</b>-<i>%s</i>" % (
+        text = "💵<b>%s</b>-<i>%s</i>\n💶<b>%s</b>-<i>%s</i>" % (
         data["Valute"]["USD"]["Name"], data["Valute"]["USD"]["Value"], data["Valute"]["EUR"]["Name"],
         data["Valute"]["EUR"]["Value"])
         currency_keyboard = ReplyKeyboardMarkup(
@@ -128,7 +129,7 @@ def currency_spisok_command(bot, update):  # Перенаправляет по �
                                reply_markup=my_keyboard)
         return "date input"
     if bot.message.text == button_menu:
-        my_keyboard = ReplyKeyboardMarkup([[button_currency], [button_help, button_end]])
+        my_keyboard = ReplyKeyboardMarkup([["Обмен валюты"],[button_currency], [button_help, button_end]])
         bot.message.reply_text(text="Вы находитесь в главном меню", reply_markup=my_keyboard)
         return "spisok comand"
 
@@ -232,6 +233,11 @@ def exchange(bot, update):
             reply_markup=ReplyKeyboardRemove(),
             parse_mode=ParseMode.HTML)
         return "get location"
+    if bot.message.text=="/menu":
+        my_keyboard = ReplyKeyboardMarkup([["Обмен валюты"], [button_currency], [button_help, button_end]])
+        bot.message.reply_text(text="Вы находитесь в главном меню", reply_markup=my_keyboard)
+        return "spisok comand"
+
 
 
 """Получаем геопозицию пользователя"""
@@ -260,7 +266,13 @@ def inline_sort_callback(bot,update):
     query=bot.callback_query
     data=query.data
     if data=="покупка":
-        query.edit_message_text(text="sortiruy daun)))",reply_markup=inline_sort())
+        keyboard = [[InlineKeyboardButton("продажа", callback_data="продажа")]]
+        query.edit_message_text(text="sortiruy daun)))",reply_markup=InlineKeyboardMarkup(keyboard))
+        return "sort"
+    if data=="продажа":
+        keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка")]]
+        query.edit_message_text(text="nu ti clown)))", reply_markup=InlineKeyboardMarkup(keyboard))
+        return "sort"
 
 
 def main():  # Основные параметры работы бота(Токен,диалог)
@@ -281,7 +293,7 @@ def main():  # Основные параметры работы бота(Ток�
                                     MessageHandler(Filters.text, currency_certain_statistics)],
                                 "get location": [MessageHandler(Filters.location, get_location)],
                                 "exchange": [MessageHandler(Filters.regex("Курс обменников|Ближайшие обменники|/menu"),exchange)],
-                                 "sort":[CallbackQueryHandler(inline_sort_callback,"покупка")]
+                                 "sort":[CallbackQueryHandler(inline_sort_callback,"покупка|продажа")]
                             },
                             fallbacks=[MessageHandler(Filters.text | Filters.video | Filters.document | Filters.photo,
                                                       dontknow)]

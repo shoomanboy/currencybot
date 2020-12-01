@@ -1,5 +1,7 @@
 import math
 from geopy.distance import geodesic
+import googlemaps
+gmaps = googlemaps.Client(key='AIzaSyBrXHjC9Mo2rhqx1c0LoE5f3QNbTebGxjU')
 
 
 def length(latitude, longitude, latitude1, longitude1):
@@ -17,6 +19,14 @@ def length(latitude, longitude, latitude1, longitude1):
     location = (latitude1, longitude1)
     distance = geodesic(selflocation, location).kilometers
     return round(distance, 2)
+
+
+def length_top5(latitude, longitude,latitude1, longitude1):
+    selflocation = "%s %s"%(latitude, longitude)
+    location = "%s %s"%(latitude1, longitude1)
+    distance = gmaps.distance_matrix(selflocation, location)['rows'][0]['elements'][0]
+    distance=float(distance["distance"]["text"].replace("km",""))
+    return distance
 
 
 if __name__ == "__main__":
