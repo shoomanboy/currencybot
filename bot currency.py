@@ -1,5 +1,5 @@
 from telegram import bot, ReplyKeyboardRemove, ReplyKeyboardMarkup, PhotoSize, ParseMode, InlineKeyboardMarkup, \
-    InlineKeyboardButton
+    InlineKeyboardButton,KeyboardButton
 from telegram.ext import Updater, CallbackContext, Filters, MessageHandler, ConversationHandler, CommandHandler, \
     CallbackQueryHandler
 from settings_bot_currency import TG_Token
@@ -29,7 +29,7 @@ rate = []  # курс валюты
 value = 0  # поиск выбранной валюты для ее статистике --->в функцие)
 button_location = "Отправить геопозицию"
 button_exchange = "Обмен валюты"
-
+location=0
 ind = -1  # Переменная для сохранения номера элемента в БД по валютам
 
 
@@ -41,7 +41,7 @@ def dontknow(bot, update):  # Если непривально введена к�
 
 
 def message_handler(bot, update):  # Обработчик сообщений после ввода команды запуска
-    my_keyboard = ReplyKeyboardMarkup([[button_exchange], [button_currency], [button_end]])
+    my_keyboard = ReplyKeyboardMarkup([[button_exchange], [button_currency], [button_end]],resize_keyboard=True)
     name = bot.message.chat.first_name
     bot.message.reply_text(
         text="Привет %s,хочешь узнать курсы валют 💵💶 и их динамику📈?\nКонечно да, тогда переходи по кнопке ниже!" % name,
@@ -52,9 +52,8 @@ def message_handler(bot, update):  # Обработчик сообщений п�
 """Основной список команд"""
 
 
-def spisok_comand(bot,
-                  update):  # данная функция перенаправляет пользователя на нужное направление в зависимости его запроса
-    my_keyboard = ReplyKeyboardMarkup([[button_exchange], [button_currency], [button_end]])
+def spisok_comand(bot, update):  # данная функция перенаправляет пользователя на нужное направление в зависимости его запроса
+    my_keyboard = ReplyKeyboardMarkup([[button_exchange], [button_currency], [button_end]],resize_keyboard=True)
     if bot.message.text == button_help:
         bot.message.reply_text(
             text="Данный бот способен показывать курсы валют 💵💶 по вашему выбору и также может анализировать ее динамику📈\nКоманда: 'Валюты' перенаправит вас в меню по валютам\nКоманда: '/end' завершит диалог с ботом  ")
@@ -71,7 +70,7 @@ def spisok_comand(bot,
         data["Valute"]["USD"]["Name"], data["Valute"]["USD"]["Value"], data["Valute"]["EUR"]["Name"],
         data["Valute"]["EUR"]["Value"])
         currency_keyboard = ReplyKeyboardMarkup(
-            [["Определенная валюта сегодня"], ["Курс валюты в выбранные даты"], [button_menu]])
+            [["Определенная валюта сегодня"], ["Курс валюты в выбранные даты"], [button_menu]],resize_keyboard=True)
         bot.message.reply_text(text=text, parse_mode=ParseMode.HTML)
         bot.message.reply_text(text="Вы находитесь в меню динамики валюты\nНажмите на нужную вам команду",
                                reply_markup=currency_keyboard)
@@ -84,11 +83,13 @@ def spisok_comand(bot,
     #                            reply_markup=ReplyKeyboardRemove())
     #     return "get location"
     if bot.message.text == "Обмен валюты":
-        my_keyboard = ReplyKeyboardMarkup([["Ближайшие обменники"], [button_menu]])
+        # my_keyboard = ReplyKeyboardMarkup([["Ближайшие обменники"], [button_menu]],resize_keyboard=True)
         bot.message.reply_text(text=get_html(params="text"), reply_markup=my_keyboard, parse_mode=ParseMode.HTML)
-        bot.message.reply_text(text="По нажатию кнопки '<b>Ближайшие обменники</b>' вы увидите курс покупки и продажи ",
-                               reply_markup=my_keyboard, parse_mode=ParseMode.HTML)
-        return "exchange"
+        location_button = KeyboardButton("📍🏦Ближайшие обменники", request_location=True)
+        location_keyboard = ReplyKeyboardMarkup([[location_button]], resize_keyboard=True)
+        bot.message.reply_text(text="💱По нажатию кнопки '<b>Ближайшие обменники</b>' вы увидите курс покупки и продажи в обменниках рядом с вами ",
+                               reply_markup=location_keyboard, parse_mode=ParseMode.HTML,request_location=True)
+        return "get location"
 
 
 """Основная развилка по курсу валют"""
@@ -129,7 +130,7 @@ def currency_spisok_command(bot, update):  # Перенаправляет по �
                                reply_markup=my_keyboard)
         return "date input"
     if bot.message.text == button_menu:
-        my_keyboard = ReplyKeyboardMarkup([["Обмен валюты"],[button_currency], [button_help, button_end]])
+        my_keyboard = ReplyKeyboardMarkup([["Обмен валюты"],[button_currency], [button_help, button_end]],resize_keyboard=True)
         bot.message.reply_text(text="Вы находитесь в главном меню", reply_markup=my_keyboard)
         return "spisok comand"
 
@@ -151,7 +152,7 @@ def currency_statistics(bot, update):
             data["Valute"]["%s" % ind]["Name"], data["Valute"]["%s" % ind]["CharCode"],
             data["Valute"]["%s" % ind]["Nominal"],
             data["Valute"]["%s" % ind]["Value"]), parse_mode=ParseMode.HTML)
-    my_keyboard = ReplyKeyboardMarkup([["Обмен валюты"], [button_currency], [button_help, button_end]])
+    my_keyboard = ReplyKeyboardMarkup([["Обмен валюты"], [button_currency], [button_help, button_end]],resize_keyboard=True)
     bot.message.reply_text(text="Вы находитесь в главном меню", reply_markup=my_keyboard)
     return "spisok comand"
 
@@ -183,7 +184,7 @@ def currency_certain_statistics(bot, update):
         currency_start_date = pd.to_datetime(currency_start_date)  # Преобразование в дату
         currency_end_date = pd.to_datetime(currency_end_date)  # Преобразование в дату
     except ValueError:
-        bot.message.reply_text(text="Введенная вами дата не существует или неккоректна\nВведите новые даты")
+        bot.message.reply_text(text="Введенная вами дата не существует или неккоректна☹\nВведите новые даты👇")
     daterange = pd.date_range(currency_start_date, currency_end_date)  # Создание диапазона по датам
     for single_date in daterange:
         receive = requests.get("https://www.cbr-xml-daily.ru/archive/%s/daily_json.js" % (
@@ -212,7 +213,7 @@ def currency_certain_statistics(bot, update):
     # for i,item in enumerate(date):
     #     date[i]+=" курс: %s рубля"%spisok[i]
     # bot.message.reply_text(text="\n".join(date))
-    my_keyboard = ReplyKeyboardMarkup([["Обмен валюты"], [button_currency], [button_menu, button_end]])
+    my_keyboard = ReplyKeyboardMarkup([["Обмен валюты"], [button_currency], [button_menu, button_end]],resize_keyboard=True)
     bot.message.reply_text(text="Выбери команду", reply_markup=my_keyboard)
 
     return "spisok comand"
@@ -220,21 +221,24 @@ def currency_certain_statistics(bot, update):
 
 """Обмен валюты"""
 
-
+"""Нерабочий вариант в плане того что геолокацию запрашивает после наэатия доп кнопки"""
 def exchange(bot, update):
-    my_keyboard = ReplyKeyboardMarkup([["Курс обменников"], ["Ближайшие обменники"], [button_menu]])
+
+    my_keyboard = ReplyKeyboardMarkup([["Курс обменников"], ["Ближайшие обменники"], [button_menu]],resize_keyboard=True)
     if bot.message.text == "Курс обменников":
         bot.message.reply_text(text=get_html(params="text"), reply_markup=my_keyboard, parse_mode=ParseMode.HTML)
         bot.message.reply_text(text="Выберите команду!")
         return "exchange"
     if bot.message.text == "Ближайшие обменники":
+        location_button = KeyboardButton("📍Отправить геолокацию📍", request_location=True)
+        location_keyboard = ReplyKeyboardMarkup([[location_button]], resize_keyboard=True)
         bot.message.reply_text(
-            text="Чтобы отправить нам геопозицию нажмите на <b>'скрепку'</b>,затем <b>'прикрепить геопозицию'</b>",
-            reply_markup=ReplyKeyboardRemove(),
+            text="📍Отправьте нам свою геолокацию",
+            reply_markup=location_keyboard,
             parse_mode=ParseMode.HTML)
         return "get location"
     if bot.message.text=="/menu":
-        my_keyboard = ReplyKeyboardMarkup([["Обмен валюты"], [button_currency], [button_help, button_end]])
+        my_keyboard = ReplyKeyboardMarkup([["Обмен валюты"], [button_currency], [button_help, button_end]],resize_keyboard=True)
         bot.message.reply_text(text="Вы находитесь в главном меню", reply_markup=my_keyboard)
         return "spisok comand"
 
@@ -244,13 +248,16 @@ def exchange(bot, update):
 
 
 def get_location(bot, update):
+    global location
     location = bot.message.location
     latitude = location["latitude"]
     longitude = location["longitude"]
     print(latitude, longitude)
-    bot.message.reply_text(text="Сейчас подберем ближайшие к вам обменники %s" % bot.message.chat.first_name)
+    # bot.message.reply_text(text="Сейчас подберем 📍ближайшие к вам обменники %s🏦" % bot.message.chat.first_name)
     bot.message.reply_text(text=get_distance(get_html("distance"), "distance", latitude, longitude),
                            parse_mode=ParseMode.HTML,reply_markup=inline_sort())
+    my_keyboard=ReplyKeyboardMarkup([[button_menu]], resize_keyboard=True)
+    bot.message.reply_text(text="Вы можете найти выгодный курс <b>покупки/продажи</b> по кнопкам под сообщением\nЕсли хотите вернуться в главное меню,то нажмите кнопку<b>'/menu'</b>",reply_markup=my_keyboard,parse_mode=ParseMode.HTML)
     return "sort"
 
 
@@ -259,20 +266,30 @@ def get_location(bot, update):
 
 def inline_sort():
     keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),
+                 InlineKeyboardButton("ближайшие\nобменники", callback_data="ближайшие обменники"),
                 InlineKeyboardButton("продажа", callback_data="продажа")]]
     return InlineKeyboardMarkup(keyboard)
+
 
 def inline_sort_callback(bot,update):
     query=bot.callback_query
     data=query.data
     if data=="покупка":
-        keyboard = [[InlineKeyboardButton("продажа", callback_data="продажа")]]
-        query.edit_message_text(text="sortiruy daun)))",reply_markup=InlineKeyboardMarkup(keyboard))
+        keyboard = [[InlineKeyboardButton("продажа", callback_data="продажа"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")]]
+        query.edit_message_text(text=get_distance(get_html("distance"),"distance_buy",location["latitude"],location["longitude"]),reply_markup=InlineKeyboardMarkup(keyboard),parse_mode=ParseMode.HTML)
         return "sort"
     if data=="продажа":
-        keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка")]]
-        query.edit_message_text(text="nu ti clown)))", reply_markup=InlineKeyboardMarkup(keyboard))
+        keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")]]
+        query.edit_message_text(text=get_distance(get_html("distance"),"distance_sell",location["latitude"],location["longitude"]), reply_markup=InlineKeyboardMarkup(keyboard),parse_mode=ParseMode.HTML)
         return "sort"
+    if data=="ближайшие обменники":
+        keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),InlineKeyboardButton("продажа", callback_data="продажа")]]
+        query.edit_message_text(text=get_distance(get_html("distance"), "distance",location["latitude"],location["longitude"]),reply_markup=InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.HTML)
+        return "sort"
+    if data=="/menu":
+        my_keyboard = ReplyKeyboardMarkup([["Курс обменников"], ["Ближайшие обменники"], [button_menu]],resize_keyboard=True)
+        query.message_text(text="Вы находитесь в главном меню",reply_markup=my_keyboard)
+        return "spisok comand"
 
 
 def main():  # Основные параметры работы бота(Токен,диалог)
@@ -282,21 +299,17 @@ def main():  # Основные параметры работы бота(Ток�
         ConversationHandler(entry_points=[CommandHandler("start", message_handler)],
                             states={
                                 "spisok comand": [
-                                    MessageHandler(Filters.regex("/help|/end|Валюты|/menu|Обмен валюты"),
-                                                   spisok_comand)],
+                                    MessageHandler(Filters.regex("/help|/end|Валюты|/menu|Обмен валюты"),spisok_comand)],
                                 "currency menu": [MessageHandler(
-                                    Filters.regex("Определенная валюта сегодня|Курс валюты в выбранные даты|/menu"),
-                                    currency_spisok_command)],
+                                    Filters.regex("Определенная валюта сегодня|Курс валюты в выбранные даты|/menu"),currency_spisok_command)],
                                 "currency statistics": [MessageHandler(Filters.text, currency_statistics)],
                                 "date input": [MessageHandler(Filters.text, date_input)],
-                                "currency certain statistics": [
-                                    MessageHandler(Filters.text, currency_certain_statistics)],
+                                "currency certain statistics": [ MessageHandler(Filters.text, currency_certain_statistics)],
                                 "get location": [MessageHandler(Filters.location, get_location)],
                                 "exchange": [MessageHandler(Filters.regex("Курс обменников|Ближайшие обменники|/menu"),exchange)],
-                                 "sort":[CallbackQueryHandler(inline_sort_callback,"покупка|продажа")]
+                                "sort": [CallbackQueryHandler(inline_sort_callback,"покупка|продажа|ближайшие обменники|/menu")]
                             },
-                            fallbacks=[MessageHandler(Filters.text | Filters.video | Filters.document | Filters.photo,
-                                                      dontknow)]
+                            fallbacks=[MessageHandler(Filters.text | Filters.video | Filters.document | Filters.photo,dontknow)]
                             )
 
     )
