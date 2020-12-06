@@ -7,7 +7,7 @@ from settings_bot_currency import id_name, mdb
 import os
 from PIL import Image
 import parcer2
-from parcer2 import URL, get_html, get_content, banks_count, get_distance
+from parcer2 import get_html, get_content, banks_count, get_distance
 import requests
 import pandas as pd
 import json
@@ -17,7 +17,8 @@ from emoji import emojize
 
 MONGODB_LINK = "mongodb+srv://shoomaher:7598621zhora@telegrambot.fls8z.mongodb.net/telegrambot?retryWrites=true&w=majority"
 MONGODB = "telegramcurrency"
-
+URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_="  # Ссылка на json доллар
+# URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=2&deal=buy&amount=100&_="  # Евро
 button_currency = "Валюты"
 button_help = "/help"
 button_end = "/end"
@@ -78,15 +79,12 @@ def spisok_comand(bot, update):  # данная функция перенапр�
     if bot.message.text == button_menu:
         bot.message.reply_text(text="Вы находитесь в главном меню!", reply_markup=my_keyboard)
         return "spisok comand"
-    # if bot.message.text == button_location:
-    #     bot.message.reply_text(text="Чтобы отправить нам геопозицию нажмите на скрепку,затем прикрепить геопозицию",
-    #                            reply_markup=ReplyKeyboardRemove())
-    #     return "get location"
     if bot.message.text == "Обмен валюты":
         # my_keyboard = ReplyKeyboardMarkup([["Ближайшие обменники"], [button_menu]],resize_keyboard=True)
-        bot.message.reply_text(text=get_html(params="text"), reply_markup=my_keyboard, parse_mode=ParseMode.HTML)
+        keyboard = InlineKeyboardButton([[InlineKeyboardButton("€", callback_data="euro")]])
+        bot.message.reply_text(text=get_html(params="text"), reply_markup=InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.HTML,disable_web_page_preview=True)
         location_button = KeyboardButton("📍🏦Ближайшие обменники", request_location=True)
-        location_keyboard = ReplyKeyboardMarkup([[location_button]], resize_keyboard=True)
+        location_keyboard = ReplyKeyboardMarkup(location_button, resize_keyboard=True)
         bot.message.reply_text(text="💱По нажатию кнопки '<b>Ближайшие обменники</b>' вы увидите курс покупки и продажи в обменниках рядом с вами ",
                                reply_markup=location_keyboard, parse_mode=ParseMode.HTML,request_location=True)
         return "get location"
@@ -272,6 +270,7 @@ def inline_sort():
 
 
 def inline_sort_callback(bot,update):
+    global URL
     query=bot.callback_query
     data=query.data
     if data=="покупка":
@@ -290,6 +289,16 @@ def inline_sort_callback(bot,update):
         my_keyboard = ReplyKeyboardMarkup([["Курс обменников"], ["Ближайшие обменники"], [button_menu]],resize_keyboard=True)
         query.message_text(text="Вы находитесь в главном меню",reply_markup=my_keyboard)
         return "spisok comand"
+    if data=="euro":
+        keyboard = [[InlineKeyboardButton("$", callback_data="dollar")]]
+        URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=2&deal=buy&amount=100&_="  # Евро
+        query.edit_message_text(text=get_html(params="text"), reply_markup=InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.HTML,disable_web_page_preview=True)
+        return "spisok comand"
+    if data=="dollar":
+        keyboard = [[InlineKeyboardButton("€", callback_data="euro")]]
+        URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_="  # Ссылка на json доллар
+        query.edit_message_text(text=get_html(params="text"), reply_markup=InlineKeyboardMarkup(keyboard),parse_mode=ParseMode.HTML, disable_web_page_preview=True)
+        return "spisok comand"
 
 
 def main():  # Основные параметры работы бота(Токен,диалог)
@@ -299,15 +308,15 @@ def main():  # Основные параметры работы бота(Ток�
         ConversationHandler(entry_points=[CommandHandler("start", message_handler)],
                             states={
                                 "spisok comand": [
-                                    MessageHandler(Filters.regex("/help|/end|Валюты|/menu|Обмен валюты"),spisok_comand)],
+                                    MessageHandler(Filters.regex("/help|/end|Валюты|/menu|Обмен валюты"),spisok_comand),CallbackQueryHandler(inline_sort_callback,"покупка|продажа|ближайшие обменники|/menu|€|$")],
                                 "currency menu": [MessageHandler(
                                     Filters.regex("Определенная валюта сегодня|Курс валюты в выбранные даты|/menu"),currency_spisok_command)],
                                 "currency statistics": [MessageHandler(Filters.text, currency_statistics)],
                                 "date input": [MessageHandler(Filters.text, date_input)],
                                 "currency certain statistics": [ MessageHandler(Filters.text, currency_certain_statistics)],
-                                "get location": [MessageHandler(Filters.location, get_location)],
+                                "get location": [MessageHandler(Filters.location, get_location),CallbackQueryHandler(inline_sort_callback,"покупка|продажа|ближайшие обменники|/menu|€|$")],
                                 "exchange": [MessageHandler(Filters.regex("Курс обменников|Ближайшие обменники|/menu"),exchange)],
-                                "sort": [CallbackQueryHandler(inline_sort_callback,"покупка|продажа|ближайшие обменники|/menu"),MessageHandler(Filters.regex("Курс обменников|Ближайшие обменники|/menu"),exchange)]
+                                "sort": [CallbackQueryHandler(inline_sort_callback,"покупка|продажа|ближайшие обменники|/menu|€|$"),MessageHandler(Filters.regex("Курс обменников|Ближайшие обменники|/menu"),exchange)]
                             },
                             fallbacks=[MessageHandler(Filters.text | Filters.video | Filters.document | Filters.photo,dontknow)]
                             )

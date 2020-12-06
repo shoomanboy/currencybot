@@ -13,10 +13,17 @@ URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amou
 """Получаем ссылку"""
 BANKS = 0
 spisok = ["Сбербанк", "АКБ ФОРА-БАНК", "Заубер Банк", "КБ Евроазиатский Инвестиционный Банк", "АКБ Трансстройбанк",
-          "БАНК КРЕМЛЕВСКИЙ", "Банк БКФ", "КБ Евроазиатский Инвестиционный Банк", "КБ Спутник", "АКБ Ланта-Банк",
-          "АКБ СЛАВИЯ", "АКБ Металлинвестбанк", "БАНК АГОРА", "БАНК МОСКВА-СИТИ", "Банк Таврический", "Банк ФИНАМ",
-          "Банк ФК Открытие", "Газпромбанк ДО", "КБ Солидарность", "МТИ Банк", "НС Банк"]  # список банков
-
+          "БАНК КРЕМЛЕВСКИЙ", "Банк БКФ", "КБ Спутник", "АКБ Ланта-Банк", "АКБ СЛАВИЯ", "АКБ Металлинвестбанк",
+          "БАНК АГОРА", "БАНК МОСКВА-СИТИ", "Банк Таврический", "Банк ФИНАМ", "Банк ФК Открытие",
+          "Газпромбанк ДО", "КБ Солидарность", "МТИ Банк", "НС Банк"]  # список банков
+phones=["88005555550","88001009889","88007754454","88005555603","88005053773",
+        "84992418814","84955140810","84951421720","84959570000","84959692415","88002509797",
+        "84957887248","84959818503","88007755712","88002004400","88004444400",
+        "84959137474","88007009220","84957398800","88005554324"]  # список номеров банков соответсвенно
+links=["https://www.sberbank.ru/ru/person/additional/operations","https://www.forabank.ru/offices/filter/c-moskva/t-otdeleniya_i_kassy/","https://www.sauberbank.com/msk/services/currencyrates/","https://eab.ru/","https://www.transstroybank.ru/chastnym-klientam/konvertor-valyut/",
+       "https://kremlinbank.ru/","https://www.cfb.ru/about/currency/","http://www.banksputnik.ru/kursy-valyut/","https://www.lanta.ru/private/?moscow","http://www.slaviabank.ru/","https://metallinvestbank.ru/private/foreign-exchange-transactions/",
+       "http://kbagora.ru/","http://www.mcbank.ru/","https://www.tavrich.ru/cur/","https://finambank.ru/person/currency","https://www.open.ru/exchange-person",
+       "https://www.gazprombank.ru/personal/courses/","https://solid.ru/retail/kursy-valyut/mos/","https://www.mti-bank.ru/","https://nsbank-exchange.ru/"]
 banks_inf = []
 
 # переменные для нахождения макс и мин продажи ,и нахождения ближ выгодной покупки или продажи
@@ -82,9 +89,9 @@ def banks_count(banks,params):
     for j in spisok:
         for i in range(len(banks)):
             if fuzz.partial_token_sort_ratio(j, banks[i]["bank"]) >= 90:  # Составление списка обменников с помощью совпадений
-                word="<b>%s</b> / <b>%s</b> <i>%s</i>" % ( banks[i]["sell"], banks[i]["buy"],j)
+                word="<b>%s</b> / <b>%s</b> <a href='%s'>%s</a>\nТелефон: %s" % ( banks[i]["sell"], banks[i]["buy"],links[i],j,phones[i])
                 if word not in spisok_rate:
-                    spisok_rate.append("<b>%s</b> / <b>%s</b> <i>%s</i>" % ( banks[i]["sell"], banks[i]["buy"],j))
+                    spisok_rate.append("<b>%s</b> / <b>%s</b> <a href='%s'>%s</a>\nТелефон: %s" % ( banks[i]["sell"], banks[i]["buy"],links[i],j,phones[i]))
                     break
     # print("\n".join(spisok_rate)) # Список доступных банков и их курсов
     text="\n".join(delete_copy(spisok_rate))
