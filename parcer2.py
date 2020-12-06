@@ -9,7 +9,7 @@ from itertools import groupby
 import googlemaps
 from operator import itemgetter
 URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_="  # Доллар
-# URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=2&deal=buy&amount=100&_="  # Евро
+# # URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=2&deal=buy&amount=100&_="  # Евро
 """Получаем ссылку"""
 BANKS = 0
 spisok = ["Сбербанк", "АКБ ФОРА-БАНК", "Заубер Банк", "КБ Евроазиатский Инвестиционный Банк", "АКБ Трансстройбанк",
@@ -29,8 +29,8 @@ banks_inf = []
 # переменные для нахождения макс и мин продажи ,и нахождения ближ выгодной покупки или продажи
 
 
-def get_html(params):
-    url = URL
+def get_html(url,params):
+    url = url
     headers = {
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.77 YaBrowser/20.11.0.817 Yowser/2.5 Safari/537.36",
         "accept": "application/json, text/javascript, */*; q=0.01"
@@ -236,7 +236,7 @@ def get_distance(banks,params,latitude,longitude):
     if params=="distance_buy":
         spisok_data.sort(key=itemgetter(1))
         for i in range(len(spisok_data)):
-            spisok_text.append("🏦<a href='%s'>%s</a> (<i>%s</i>км)\n<b>%s</b> / <b>%s</b>" % (spisok_data[i][1],spisok_data[i][2],link(spisok_data[i][4],spisok_data[i][5],spisok_data[i][6],spisok_data[i][7]),spisok_data[i][0], spisok_data[i][3]))
+            spisok_text.append("🏦<b>%s</b> / <b>%s</b> <a href='%s'>%s</a> (<i>%s</i>км)" % (spisok_data[i][1],spisok_data[i][2],link(spisok_data[i][4],spisok_data[i][5],spisok_data[i][6],spisok_data[i][7]),spisok_data[i][0], spisok_data[i][3]))
         print("\n".join(spisok_text))
         if maxsell not in spisok_text:
             spisok_text.insert(0,maxsell)
@@ -246,7 +246,7 @@ def get_distance(banks,params,latitude,longitude):
     if params=="distance_sell":
         spisok_data.sort(key=itemgetter(2))
         for i in range(len(spisok_data)):
-            spisok_text.append("🏦<a href='%s'>%s</a> (<i>%s</i>км)\n<b>%s</b> / <b>%s</b>" % (spisok_data[i][1],spisok_data[i][2],link(spisok_data[i][4],spisok_data[i][5],spisok_data[i][6],spisok_data[i][7]),spisok_data[i][0], spisok_data[i][3]))
+            spisok_text.append("🏦<b>%s</b> / <b>%s</b> <a href='%s'>%s</a> (<i>%s</i>км)" % (spisok_data[i][1],spisok_data[i][2],link(spisok_data[i][4],spisok_data[i][5],spisok_data[i][6],spisok_data[i][7]),spisok_data[i][0], spisok_data[i][3]))
         if minbuy not in spisok_text:
             spisok_text.insert(0,minbuy)
         text = "\n".join(spisok_text)
