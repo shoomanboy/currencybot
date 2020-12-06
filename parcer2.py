@@ -8,8 +8,8 @@ from termcolor import colored
 from itertools import groupby
 import googlemaps
 from operator import itemgetter
-URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_="
-
+URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_="  # Доллар
+# URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=2&deal=buy&amount=100&_="  # Евро
 """Получаем ссылку"""
 BANKS = 0
 spisok = ["Сбербанк", "АКБ ФОРА-БАНК", "Заубер Банк", "КБ Евроазиатский Инвестиционный Банк", "АКБ Трансстройбанк",
@@ -76,14 +76,16 @@ def get_content(req,params):
 
 
 def banks_count(banks,params):
+    word=0
     """Сортировка банков"""
     spisok_rate=[]
     for j in spisok:
         for i in range(len(banks)):
             if fuzz.partial_token_sort_ratio(j, banks[i]["bank"]) >= 90:  # Составление списка обменников с помощью совпадений
-                spisok_rate.append("<i>%s</i>- <b>%s</b> / <b>%s</b>" % (j, banks[i]["sell"], banks[i]["buy"]))
-                # print(j, '  ', banks[i]["bank"])
-                break
+                word="<b>%s</b> / <b>%s</b> <i>%s</i>" % ( banks[i]["sell"], banks[i]["buy"],j)
+                if word not in spisok_rate:
+                    spisok_rate.append("<b>%s</b> / <b>%s</b> <i>%s</i>" % ( banks[i]["sell"], banks[i]["buy"],j))
+                    break
     # print("\n".join(spisok_rate)) # Список доступных банков и их курсов
     text="\n".join(delete_copy(spisok_rate))
     if params=="text":
@@ -171,8 +173,11 @@ def get_distance(banks,params,latitude,longitude):
         spisok_sell_sorted.append(spisok_sell[0])
     minbuy=spisok_sell_sorted[0]
     # "<i>%s</i>- <b>%s</b> / <b>%s</b> (<i>%s</i>км)" % (spisok_data[i][0], spisok_data[i][1], spisok_data[i][2], spisok_data[i][3]
-    maxsell="🏦<i>%s</i> (<i>%s</i>км)\n<b>%s</b> / <b>%s</b>"%(maxsell[6],maxsell[2],maxsell[4],maxsell[5])
-    minbuy="🏦<i>%s</i> (<i>%s</i>км)\n<b>%s</b> / <b>%s</b>"%(minbuy[6],minbuy[2],minbuy[4],minbuy[5])
+
+    # maxsell = "🏦<b>%s</b> / <b>%s</b> <a href='%s'>%s</a> (<i>%s</i>км)"
+    # покупка / продажа банк расстояние
+    maxsell="🏦<b>%s</b> / <b>%s</b> <a href='%s'>%s</a> (<i>%s</i>км)" % (maxsell[4],maxsell[5],link(latitude,longitude,maxsell[0],maxsell[1]),maxsell[6],maxsell[2])
+    minbuy="🏦<b>%s</b> / <b>%s</b> <a href='%s'>%s</a> (<i>%s</i>км)" % (minbuy[4],minbuy[5],link(latitude,longitude,minbuy[0],minbuy[1]),minbuy[6],minbuy[2])
     print(maxsell)
     print(minbuy)
     """Подсчет расстояния с помощью расстояния между точками, затем подсчет расстояния в топ5 через googlemapsapi"""
@@ -212,26 +217,29 @@ def get_distance(banks,params,latitude,longitude):
         else:  # список в котором сохранены все данные,для того чтобы делать сортировку относительно любогу параметра
             # затем можно отсортированный список использовать для создания списка из строчек с отсортированными данными
             spisok_data.append([names[i], spisok_rate[i][1],spisok_rate[i][2], length_top5(latitude, longitude, coordinates[i][0], coordinates[i][1]),latitude, longitude, coordinates[i][0], coordinates[i][1]])
+    """Ближайшие банки"""
     if params=="distance":
         spisok_data.sort(key=itemgetter(3))
         for i in range(len(spisok_data)):
-            spisok_text.append("🏦<i>%s</i> (<i>%s</i>км)\n<b>%s</b> / <b>%s</b>" % (spisok_data[i][0], spisok_data[i][3], spisok_data[i][1],spisok_data[i][2]))
+            spisok_text.append("🏦<b>%s</b> / <b>%s</b> <a href='%s'>%s</a> (<i>%s</i>км)" % (spisok_data[i][1],spisok_data[i][2],link(spisok_data[i][4],spisok_data[i][5],spisok_data[i][6],spisok_data[i][7]),spisok_data[i][0], spisok_data[i][3]))
         text="\n".join(spisok_text)
         # print(text)
         return text
+    """Выгодная покупка(банк покупает по самому высоку курсу)"""
     if params=="distance_buy":
         spisok_data.sort(key=itemgetter(1))
         for i in range(len(spisok_data)):
-            spisok_text.append("🏦<i>%s</i> (<i>%s</i>км)\n<b>%s</b> / <b>%s</b>" % (spisok_data[i][0], spisok_data[i][3], spisok_data[i][1],spisok_data[i][2]))
+            spisok_text.append("🏦<a href='%s'>%s</a> (<i>%s</i>км)\n<b>%s</b> / <b>%s</b>" % (spisok_data[i][1],spisok_data[i][2],link(spisok_data[i][4],spisok_data[i][5],spisok_data[i][6],spisok_data[i][7]),spisok_data[i][0], spisok_data[i][3]))
         print("\n".join(spisok_text))
         if maxsell not in spisok_text:
             spisok_text.insert(0,maxsell)
         text = "\n".join(spisok_text)
         return text
+    """Выгодная продажа(банк продает по самому низкому курсу)"""
     if params=="distance_sell":
         spisok_data.sort(key=itemgetter(2))
         for i in range(len(spisok_data)):
-            spisok_text.append("🏦<i>%s</i> (<i>%s</i>км)\n<b>%s</b> / <b>%s</b>" % (spisok_data[i][0], spisok_data[i][3], spisok_data[i][1], spisok_data[i][2]))
+            spisok_text.append("🏦<a href='%s'>%s</a> (<i>%s</i>км)\n<b>%s</b> / <b>%s</b>" % (spisok_data[i][1],spisok_data[i][2],link(spisok_data[i][4],spisok_data[i][5],spisok_data[i][6],spisok_data[i][7]),spisok_data[i][0], spisok_data[i][3]))
         if minbuy not in spisok_text:
             spisok_text.insert(0,minbuy)
         text = "\n".join(spisok_text)
@@ -241,7 +249,8 @@ def get_distance(banks,params,latitude,longitude):
 
 
 def link(latitude, longitude,latitude1,longitude1):
-    link='https://yandex.ru/maps/213/moscow/?ll={}0%2C{}&mode=routes&rtext={}%2C{}~{}%2C{}&rtt=auto&ruri=ymapsbm1%3A%2F%2Fgeo%3Fll%3D37.341%252C55.845%26spn%3D0.001%252C0.001%26text%3D%25D0%25A0%25D0%25BE%25D1%2581%25D1%2581%25D0%25B8%25D1%258F%252C%2520%25D0%259C%25D0%25BE%25D1%2581%25D0%25BA%25D0%25B2%25D0%25B0%252C%2520%25D1%2583%25D0%25BB%25D0%25B8%25D1%2586%25D0%25B0%2520%25D0%2591%25D0%25B0%25D1%2580%25D1%258B%25D1%2588%25D0%25B8%25D1%2585%25D0%25B0%252C%252025%25D0%25BA5~ymapsbm1%3A%2F%2Forg%3Foid%3D1100133127&z=14.47'.format(latitude,longitude,latitude,longitude,latitude1,longitude1)
+    link='https://yandex.ru/maps/213/moscow/?ll=%2C&mode=routes&rtext={0}%2C{1}~{2}%2C{3}&rtt=auto&ruri=ymapsbm1%3A%2F'.format(latitude, longitude,latitude1,longitude1)
+    # print(link)
     return link
 
 
@@ -253,7 +262,7 @@ def delete_copy(array):
     return array1
 
 if __name__ == '__main__':
-    get_html(params="text")
+    link(55.845735, 37.362160,55.845203,37.340676)
 
 
 # for i in content["banks"]:

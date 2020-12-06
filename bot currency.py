@@ -255,7 +255,7 @@ def get_location(bot, update):
     print(latitude, longitude)
     # bot.message.reply_text(text="Сейчас подберем 📍ближайшие к вам обменники %s🏦" % bot.message.chat.first_name)
     bot.message.reply_text(text=get_distance(get_html("distance"), "distance", latitude, longitude),
-                           parse_mode=ParseMode.HTML,reply_markup=inline_sort())
+                           parse_mode=ParseMode.HTML,reply_markup=inline_sort(),disable_web_page_preview=True)
     my_keyboard=ReplyKeyboardMarkup([[button_menu]], resize_keyboard=True)
     bot.message.reply_text(text="Вы можете найти выгодный курс <b>покупки/продажи</b> по кнопкам под сообщением\nЕсли хотите вернуться в главное меню,то нажмите кнопку<b>'/menu'</b>",reply_markup=my_keyboard,parse_mode=ParseMode.HTML)
     return "sort"
@@ -276,15 +276,15 @@ def inline_sort_callback(bot,update):
     data=query.data
     if data=="покупка":
         keyboard = [[InlineKeyboardButton("продажа", callback_data="продажа"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")]]
-        query.edit_message_text(text=get_distance(get_html("distance"),"distance_buy",location["latitude"],location["longitude"]),reply_markup=InlineKeyboardMarkup(keyboard),parse_mode=ParseMode.HTML)
+        query.edit_message_text(text=get_distance(get_html("distance"),"distance_buy",location["latitude"],location["longitude"]),reply_markup=InlineKeyboardMarkup(keyboard),parse_mode=ParseMode.HTML,disable_web_page_preview=True)
         return "sort"
     if data=="продажа":
         keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")]]
-        query.edit_message_text(text=get_distance(get_html("distance"),"distance_sell",location["latitude"],location["longitude"]), reply_markup=InlineKeyboardMarkup(keyboard),parse_mode=ParseMode.HTML)
+        query.edit_message_text(text=get_distance(get_html("distance"),"distance_sell",location["latitude"],location["longitude"]), reply_markup=InlineKeyboardMarkup(keyboard),parse_mode=ParseMode.HTML,disable_web_page_preview=True)
         return "sort"
     if data=="ближайшие обменники":
         keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),InlineKeyboardButton("продажа", callback_data="продажа")]]
-        query.edit_message_text(text=get_distance(get_html("distance"), "distance",location["latitude"],location["longitude"]),reply_markup=InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.HTML)
+        query.edit_message_text(text=get_distance(get_html("distance"), "distance",location["latitude"],location["longitude"]),reply_markup=InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.HTML,disable_web_page_preview=True)
         return "sort"
     if data=="/menu":
         my_keyboard = ReplyKeyboardMarkup([["Курс обменников"], ["Ближайшие обменники"], [button_menu]],resize_keyboard=True)
@@ -307,7 +307,7 @@ def main():  # Основные параметры работы бота(Ток�
                                 "currency certain statistics": [ MessageHandler(Filters.text, currency_certain_statistics)],
                                 "get location": [MessageHandler(Filters.location, get_location)],
                                 "exchange": [MessageHandler(Filters.regex("Курс обменников|Ближайшие обменники|/menu"),exchange)],
-                                "sort": [CallbackQueryHandler(inline_sort_callback,"покупка|продажа|ближайшие обменники|/menu")]
+                                "sort": [CallbackQueryHandler(inline_sort_callback,"покупка|продажа|ближайшие обменники|/menu"),MessageHandler(Filters.regex("Курс обменников|Ближайшие обменники|/menu"),exchange)]
                             },
                             fallbacks=[MessageHandler(Filters.text | Filters.video | Filters.document | Filters.photo,dontknow)]
                             )
