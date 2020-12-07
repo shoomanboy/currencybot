@@ -264,9 +264,15 @@ def get_location(bot, update):
 
 
 def inline_sort():
-    keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),
-                 InlineKeyboardButton("ближайшие\nобменники", callback_data="ближайшие обменники"),
-                InlineKeyboardButton("продажа", callback_data="продажа")]]
+    if URL=="https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_=":
+        keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),
+                     InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники"),
+                    InlineKeyboardButton("продажа", callback_data="продажа")],[InlineKeyboardButton("€ EURO", callback_data="euronear")]]
+    else:
+        keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),
+                     InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники"),
+                     InlineKeyboardButton("продажа", callback_data="продажа")],
+                    [InlineKeyboardButton("$ DOLLAR", callback_data="dollarnear")]]
     return InlineKeyboardMarkup(keyboard)
 
 
@@ -275,15 +281,24 @@ def inline_sort_callback(bot,update):
     query=bot.callback_query
     data=query.data
     if data=="покупка":
-        keyboard = [[InlineKeyboardButton("продажа", callback_data="продажа"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")]]
+        if URL=="https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_=" :  # Ссылка на json доллар
+            keyboard = [[InlineKeyboardButton("продажа", callback_data="продажа"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")],[InlineKeyboardButton("€ EURO", callback_data="euronear")]]
+        else:
+            keyboard = [[InlineKeyboardButton("продажа", callback_data="продажа"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")],[InlineKeyboardButton("$ DOLLAR", callback_data="dollarnear")]]
         query.edit_message_text(text=get_distance(get_html(URL,"distance"),"distance_buy",location["latitude"],location["longitude"]),reply_markup=InlineKeyboardMarkup(keyboard),parse_mode=ParseMode.HTML,disable_web_page_preview=True)
         return "sort"
     if data=="продажа":
-        keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")]]
+        if URL=="https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_=" :  # Ссылка на json доллар
+            keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")],[InlineKeyboardButton("€ EURO", callback_data="euronear")]]
+        else:
+            keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")],[InlineKeyboardButton("$ DOLLAR", callback_data="dollarnear")]]
         query.edit_message_text(text=get_distance(get_html(URL,"distance"),"distance_sell",location["latitude"],location["longitude"]), reply_markup=InlineKeyboardMarkup(keyboard),parse_mode=ParseMode.HTML,disable_web_page_preview=True)
         return "sort"
     if data=="ближайшие обменники":
-        keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),InlineKeyboardButton("продажа", callback_data="продажа")]]
+        if URL == "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_=":  # Ссылка на json доллар
+            keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),InlineKeyboardButton("продажа", callback_data="продажа")],[InlineKeyboardButton("€ EURO", callback_data="euronear")]]
+        else:
+            keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),InlineKeyboardButton("продажа", callback_data="продажа")],[InlineKeyboardButton("$ DOLLAR", callback_data="dollarnear")]]
         query.edit_message_text(text=get_distance(get_html(URL,"distance"), "distance",location["latitude"],location["longitude"]),reply_markup=InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.HTML,disable_web_page_preview=True)
         return "sort"
     if data=="/menu":
@@ -300,6 +315,22 @@ def inline_sort_callback(bot,update):
         URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_="  # Ссылка на json доллар
         query.edit_message_text(text=get_html(URL,params="text"), reply_markup=InlineKeyboardMarkup(keyboard),parse_mode=ParseMode.HTML, disable_web_page_preview=True)
         return "get location"
+    if data=="euronear":
+        URL="https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=2&deal=buy&amount=100&_="
+        keyboard=[[InlineKeyboardButton("продажа", callback_data="продажа"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")],[InlineKeyboardButton("$ DOLLAR", callback_data="dollarnear")]]
+        query.edit_message_text(
+            text=get_distance(get_html(URL, "distance"), "distance", location["latitude"], location["longitude"]),
+            reply_markup=InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.HTML, disable_web_page_preview=True)
+        return "sort"
+    if data=="dollarnear":
+        URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_="
+        keyboard = [[InlineKeyboardButton("продажа", callback_data="продажа"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")],[InlineKeyboardButton("$ EURO", callback_data="euronear")]]
+        query.edit_message_text(
+            text=get_distance(get_html(URL, "distance"), "distance", location["latitude"], location["longitude"]),
+            reply_markup=InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.HTML, disable_web_page_preview=True)
+        return "sort"
+
+
 
 
 def main():  # Основные параметры работы бота(Токен,диалог)
