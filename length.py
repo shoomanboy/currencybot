@@ -29,5 +29,4 @@ def length_top5(latitude, longitude,latitude1, longitude1):
     return distance
 
 
-if __name__ == "__main__":
-    length(latitude, longitude, latitude1, longitude1)
+

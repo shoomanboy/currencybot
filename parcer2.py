@@ -2,9 +2,7 @@ import requests
 import json
 from bs4 import BeautifulSoup
 from fuzzywuzzy import fuzz
-import math
 from length import length,length_top5
-from termcolor import colored
 from itertools import groupby
 import googlemaps
 from operator import itemgetter
@@ -86,12 +84,12 @@ def banks_count(banks,params):
     word=0
     """Сортировка банков"""
     spisok_rate=[]
-    for j in spisok:
+    for j in range(len(spisok)):
         for i in range(len(banks)):
-            if fuzz.partial_token_sort_ratio(j, banks[i]["bank"]) >= 90:  # Составление списка обменников с помощью совпадений
-                word="<b>%s</b> / <b>%s</b> <a href='%s'>%s</a>\nТелефон: %s" % ( banks[i]["sell"], banks[i]["buy"],links[i],j,phones[i])
+            if fuzz.partial_token_sort_ratio(spisok[j], banks[i]["bank"]) >= 90:  # Составление списка обменников с помощью совпадений
+                word="<b>%s</b> / <b>%s</b> <a href='%s'>%s</a>\nТелефон: %s" % ( banks[i]["sell"], banks[i]["buy"],links[j],spisok[j],phones[j])
                 if word not in spisok_rate:
-                    spisok_rate.append("<b>%s</b> / <b>%s</b> <a href='%s'>%s</a>\nТелефон: %s" % ( banks[i]["sell"], banks[i]["buy"],links[i],j,phones[i]))
+                    spisok_rate.append("<b>%s</b> / <b>%s</b> <a href='%s'>%s</a>\nТелефон: %s" % ( banks[i]["sell"], banks[i]["buy"],links[j],spisok[j],phones[j]))
                     break
     # print("\n".join(spisok_rate)) # Список доступных банков и их курсов
     text="\n".join(delete_copy(spisok_rate))
@@ -140,7 +138,7 @@ def get_distance(banks,params,latitude,longitude):
             maxsell=banks[i]["sell"]
         if float(banks[i]["buy"])<float(minbuy):
             minbuy=banks[i]["buy"]
-            
+
     """Сохранение всех максимальных и минимальных элементов"""
     for i in range(len(banks)):
         if banks[i]["sell"]==maxsell:
@@ -268,24 +266,3 @@ def delete_copy(array):
     array1=[el for el, _ in groupby(array)]
     return array1
 
-if __name__ == '__main__':
-    link(55.845735, 37.362160,55.845203,37.340676)
-
-
-# for i in content["banks"]:
-# print("Банк: ",content["banks"][k]["name"])
-# print("Покупка: ",content["banks"][k]["rate"]["sell"])
-# print("Продажа: ",content["banks"][k]["rate"]["buy"])
-# try :
-#     content["banks"][k]["metro"][0]
-# except TypeError:
-#     exist=None
-#     print("Нет ближайшего метро\n")
-# if exist is not None:
-#     print("Метро: ", end="")
-#     for j in range(len(content["banks"][k]["metro"])):
-#         print(content["banks"][k]["metro"][j][0],end=", ")
-#     print()
-#     print()
-# k+=1
-# exist = 1

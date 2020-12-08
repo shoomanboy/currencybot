@@ -5,9 +5,7 @@ from telegram.ext import Updater, CallbackContext, Filters, MessageHandler, Conv
 from settings_bot_currency import TG_Token
 from settings_bot_currency import id_name, mdb
 import os
-from PIL import Image
-import parcer2
-from parcer2 import get_html, get_content, banks_count, get_distance
+from parcer2 import get_html, get_distance
 import requests
 import pandas as pd
 import json
@@ -35,14 +33,14 @@ ind = -1  # Переменная для сохранения номера эле
 
 
 def dontknow(bot, update):  # Если непривально введена команда,то будет отправляться пользователю данная команда
-    bot.message.reply_text(text='Я вас не понимаю,нажмите на команду')
+    bot.message.reply_text(text='Я вас не понимаю,нажмите на команду или выполните пожалуйста указанное действие')
 
 
 """Старт"""
 
 
 def message_handler(bot, update):  # Обработчик сообщений после ввода команды запуска
-    my_keyboard = ReplyKeyboardMarkup([[button_exchange], [button_currency], [button_end]],resize_keyboard=True)
+    my_keyboard = ReplyKeyboardMarkup([[button_exchange], [button_currency], [button_help,button_end]],resize_keyboard=True)
     name = bot.message.chat.first_name
     bot.message.reply_text(
         text="Привет %s,хочешь узнать курсы валют 💵💶 и их динамику📈?\nКонечно да, тогда переходи по кнопке ниже!" % name,
@@ -54,7 +52,7 @@ def message_handler(bot, update):  # Обработчик сообщений п�
 
 
 def spisok_comand(bot, update):  # данная функция перенаправляет пользователя на нужное направление в зависимости его запроса
-    my_keyboard = ReplyKeyboardMarkup([[button_exchange], [button_currency], [button_end]],resize_keyboard=True)
+    my_keyboard = ReplyKeyboardMarkup([[button_exchange], [button_currency], [button_help,button_end]],resize_keyboard=True)
     if bot.message.text == button_help:
         bot.message.reply_text(
             text="Данный бот способен показывать курсы валют 💵💶 по вашему выбору и также может анализировать ее динамику📈\nКоманда: 'Валюты' перенаправит вас в меню по валютам\nКоманда: '/end' завершит диалог с ботом  ")
@@ -85,7 +83,7 @@ def spisok_comand(bot, update):  # данная функция перенапр�
         inline_keyboard=InlineKeyboardMarkup(keyboard)
         bot.message.reply_text(text=get_html(URL,params="text"), reply_markup=inline_keyboard, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
         button_location=KeyboardButton("📍🏦Ближайшие обменники",request_location=True)
-        location_keyboard=ReplyKeyboardMarkup([[button_location]],resize_keyboard=True)
+        location_keyboard=ReplyKeyboardMarkup([[button_location],[button_menu]],resize_keyboard=True)
         # location_keyboard = ReplyKeyboardMarkup([["📍🏦Ближайшие обменники"]],request_location=True,resize_keyboard=True)
         bot.message.reply_text(text="💱По нажатию кнопки '<b>Ближайшие обменники</b>' вы увидите курс покупки и продажи в обменниках рядом с вами ",reply_markup=location_keyboard, parse_mode=ParseMode.HTML)
         return "get location"
@@ -346,13 +344,12 @@ def main():  # Основные параметры работы бота(Ток�
                                 "currency statistics": [MessageHandler(Filters.text, currency_statistics)],
                                 "date input": [MessageHandler(Filters.text, date_input)],
                                 "currency certain statistics": [ MessageHandler(Filters.text, currency_certain_statistics)],
-                                "get location": [MessageHandler(Filters.location, get_location),CallbackQueryHandler(inline_sort_callback,"€|$")],
+                                "get location": [MessageHandler(Filters.location, get_location),CallbackQueryHandler(inline_sort_callback,"€|$"),MessageHandler(Filters.regex("/help|/end|/menu"),spisok_comand)],
                                 "exchange": [MessageHandler(Filters.regex("Курс обменников|Ближайшие обменники|/menu"),exchange),CallbackQueryHandler(inline_sort_callback,"€|$")],
                                 "sort": [CallbackQueryHandler(inline_sort_callback,"покупка|продажа|ближайшие обменники|/menu|€|$"),MessageHandler(Filters.regex("Курс обменников|Ближайшие обменники|/menu"),exchange)]
                             },
                             fallbacks=[MessageHandler(Filters.text | Filters.video | Filters.document | Filters.photo,dontknow)]
                             )
-
     )
     # inline_keyboard_handler=CallbackQueryHandler(callback=inline_sort_callback,pass_chat_data=True)
     # updater.dispatcher.add_handler(inline_keyboard_handler)
