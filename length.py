@@ -1,7 +1,7 @@
 import math
 from geopy.distance import geodesic
 import googlemaps
-gmaps = googlemaps.Client(key='AIzaSyBrXHjC9Mo2rhqx1c0LoE5f3QNbTebGxjU')
+gmaps = googlemaps.Client(key='KEY')
 
 
 def length(latitude, longitude, latitude1, longitude1):
