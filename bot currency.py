@@ -40,6 +40,11 @@ def dontknow(bot, update):  # Если непривально введена к�
 
 
 def message_handler(bot, update):  # Обработчик сообщений после ввода команды запуска
+    user_id=bot.message.chat.id
+    result=mdb.find_one({"_id":2,"user_id.%s"%user_id:{"$exists":True}})
+    print(result)
+    if result==None:
+        mdb.update_one({"_id":2},{"$set":{"user_id":{"%s"%user_id:1}}})
     my_keyboard = ReplyKeyboardMarkup([[button_exchange], [button_currency], [button_help,button_end]],resize_keyboard=True)
     name = bot.message.chat.first_name
     bot.message.reply_text(
@@ -53,6 +58,7 @@ def message_handler(bot, update):  # Обработчик сообщений п�
 
 def spisok_comand(bot, update):  # данная функция перенаправляет пользователя на нужное направление в зависимости его запроса
     my_keyboard = ReplyKeyboardMarkup([[button_exchange], [button_currency], [button_help,button_end]],resize_keyboard=True)
+    global URL
     if bot.message.text == button_help:
         bot.message.reply_text(
             text="Данный бот способен показывать курсы валют 💵💶 по вашему выбору и также может анализировать ее динамику📈\nКоманда: 'Валюты' перенаправит вас в меню по валютам\nКоманда: '/end' завершит диалог с ботом  ")
@@ -78,6 +84,12 @@ def spisok_comand(bot, update):  # данная функция перенапр�
         bot.message.reply_text(text="Вы находитесь в главном меню!", reply_markup=my_keyboard)
         return "spisok comand"
     if bot.message.text == "Обмен валюты":
+        user_id = bot.message.chat.id
+        result=mdb.find_one({"_id":2,"user_id.%s"%user_id:{"$exists":True}})
+        if result["user_id"]["%s"%user_id]==1:
+            URL="https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_="
+        else:
+            URL="https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=2&deal=buy&amount=100&_="
         # my_keyboard = ReplyKeyboardMarkup([["Ближайшие обменники"], [button_menu]],resize_keyboard=True)
         keyboard = [[InlineKeyboardButton("€ EURO", callback_data="euro")]]
         inline_keyboard=InlineKeyboardMarkup(keyboard)
@@ -275,25 +287,31 @@ def inline_sort():
 
 
 def inline_sort_callback(bot,update):
+    print(bot.callback_query)
     global URL
+    user_id=bot.callback_query.message.chat.id
     query=bot.callback_query
     data=query.data
+    result=mdb.find_one({"_id":2},{"user_id.%s"%user_id:1})
     if data=="покупка":
-        if URL=="https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_=" :  # Ссылка на json доллар
+        if result["user_id"]["%s"%user_id]==1:
+            URL="https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_="   # Ссылка на json доллар
             keyboard = [[InlineKeyboardButton("продажа", callback_data="продажа"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")],[InlineKeyboardButton("€ EURO", callback_data="euronear")]]
         else:
             keyboard = [[InlineKeyboardButton("продажа", callback_data="продажа"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")],[InlineKeyboardButton("$ DOLLAR", callback_data="dollarnear")]]
         query.edit_message_text(text=get_distance(get_html(URL,"distance"),"distance_buy",location["latitude"],location["longitude"]),reply_markup=InlineKeyboardMarkup(keyboard),parse_mode=ParseMode.HTML,disable_web_page_preview=True)
         return "sort"
     if data=="продажа":
-        if URL=="https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_=" :  # Ссылка на json доллар
+        if result["user_id"]["%s"%user_id]==1:
+            URL="https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_="   # Ссылка на json доллар
             keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")],[InlineKeyboardButton("€ EURO", callback_data="euronear")]]
         else:
             keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")],[InlineKeyboardButton("$ DOLLAR", callback_data="dollarnear")]]
         query.edit_message_text(text=get_distance(get_html(URL,"distance"),"distance_sell",location["latitude"],location["longitude"]), reply_markup=InlineKeyboardMarkup(keyboard),parse_mode=ParseMode.HTML,disable_web_page_preview=True)
         return "sort"
     if data=="ближайшие обменники":
-        if URL == "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_=":  # Ссылка на json доллар
+        if result["user_id"]["%s"%user_id]==1:
+            URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_="  # Ссылка на json доллар
             keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),InlineKeyboardButton("продажа", callback_data="продажа")],[InlineKeyboardButton("€ EURO", callback_data="euronear")]]
         else:
             keyboard = [[InlineKeyboardButton("покупка", callback_data="покупка"),InlineKeyboardButton("продажа", callback_data="продажа")],[InlineKeyboardButton("$ DOLLAR", callback_data="dollarnear")]]
@@ -304,16 +322,19 @@ def inline_sort_callback(bot,update):
         query.message_text(text="Вы находитесь в главном меню",reply_markup=my_keyboard)
         return "spisok comand"
     if data=="euro":
+        mdb.update_one({"_id":2},{"$set":{"user_id":{"%s"%user_id:2}}})
         keyboard = [[InlineKeyboardButton("$ DOLLAR", callback_data="dollar")]]
         URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=2&deal=buy&amount=100&_="  # Евро
         query.edit_message_text(text=get_html(URL,params="text"), reply_markup=InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.HTML,disable_web_page_preview=True)
         return "get location"
     if data=="dollar":
+        mdb.update_one({"_id":2},{"$set":{"user_id":{"%s"%user_id:1}}})
         keyboard = [[InlineKeyboardButton("€ EURO", callback_data="euro")]]
         URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_="  # Ссылка на json доллар
         query.edit_message_text(text=get_html(URL,params="text"), reply_markup=InlineKeyboardMarkup(keyboard),parse_mode=ParseMode.HTML, disable_web_page_preview=True)
         return "get location"
     if data=="euronear":
+        mdb.update_one({"_id":2},{"$set":{"user_id":{"%s"%user_id:2}}})
         URL="https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=2&deal=buy&amount=100&_="
         keyboard=[[InlineKeyboardButton("продажа", callback_data="продажа"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")],[InlineKeyboardButton("$ DOLLAR", callback_data="dollarnear")]]
         query.edit_message_text(
@@ -321,6 +342,7 @@ def inline_sort_callback(bot,update):
             reply_markup=InlineKeyboardMarkup(keyboard), parse_mode=ParseMode.HTML, disable_web_page_preview=True)
         return "sort"
     if data=="dollarnear":
+        mdb.update_one({"_id":2},{"$set":{"user_id":{"%s"%user_id:1}}})
         URL = "https://cash.rbc.ru/cash/json/cash_rates/?city=1&currency=3&deal=buy&amount=100&_="
         keyboard = [[InlineKeyboardButton("продажа", callback_data="продажа"),InlineKeyboardButton("ближайшие обменники", callback_data="ближайшие обменники")],[InlineKeyboardButton("$ EURO", callback_data="euronear")]]
         query.edit_message_text(
@@ -338,15 +360,14 @@ def main():  # Основные параметры работы бота(Ток�
         ConversationHandler(entry_points=[CommandHandler("start", message_handler)],
                             states={
                                 "spisok comand": [
-                                    MessageHandler(Filters.regex("/help|/end|Валюты|/menu|Обмен валюты"),spisok_comand),CallbackQueryHandler(inline_sort_callback,"€|$")],
+                                    MessageHandler(Filters.regex("/help|/end|Валюты|/menu|Обмен валюты"),spisok_comand)],
                                 "currency menu": [MessageHandler(
                                     Filters.regex("Определенная валюта сегодня|Курс валюты в выбранные даты|/menu"),currency_spisok_command)],
                                 "currency statistics": [MessageHandler(Filters.text, currency_statistics)],
                                 "date input": [MessageHandler(Filters.text, date_input)],
-                                "currency certain statistics": [ MessageHandler(Filters.text, currency_certain_statistics)],
-                                "get location": [MessageHandler(Filters.location, get_location),CallbackQueryHandler(inline_sort_callback,"€|$"),MessageHandler(Filters.regex("/help|/end|/menu"),spisok_comand)],
-                                "exchange": [MessageHandler(Filters.regex("Курс обменников|Ближайшие обменники|/menu"),exchange),CallbackQueryHandler(inline_sort_callback,"€|$")],
-                                "sort": [CallbackQueryHandler(inline_sort_callback,"покупка|продажа|ближайшие обменники|/menu|€|$"),MessageHandler(Filters.regex("Курс обменников|Ближайшие обменники|/menu"),exchange)]
+                                "currency certain statistics": [MessageHandler(Filters.text, currency_certain_statistics)],
+                                "get location": [MessageHandler(Filters.location, get_location),CallbackQueryHandler(inline_sort_callback,"покупка|продажа|ближайшие обменники|/menu|€|$"),MessageHandler(Filters.regex("/help|/end|/menu"),spisok_comand)],
+                                "sort": [CallbackQueryHandler(inline_sort_callback,"покупка|продажа|ближайшие обменники|€|$"),MessageHandler(Filters.regex("/help|/end|/menu"),spisok_comand)]
                             },
                             fallbacks=[MessageHandler(Filters.text | Filters.video | Filters.document | Filters.photo,dontknow)]
                             )
