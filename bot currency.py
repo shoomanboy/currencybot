@@ -287,7 +287,6 @@ def inline_sort():
 
 
 def inline_sort_callback(bot,update):
-    print(bot.callback_query)
     global URL
     user_id=bot.callback_query.message.chat.id
     query=bot.callback_query
