@@ -183,14 +183,14 @@ def get_distance(banks,params,latitude,longitude):
     # покупка / продажа банк расстояние
     maxsell="🏦<b>%s</b> / <b>%s</b> <a href='%s'>%s</a> (<i>%s</i>км)" % (maxsell[4],maxsell[5],link(latitude,longitude,maxsell[0],maxsell[1]),maxsell[6],maxsell[2])
     minbuy="🏦<b>%s</b> / <b>%s</b> <a href='%s'>%s</a> (<i>%s</i>км)" % (minbuy[4],minbuy[5],link(latitude,longitude,minbuy[0],minbuy[1]),minbuy[6],minbuy[2])
-    print(maxsell)
-    print(minbuy)
+    # print(maxsell)
+    # print(minbuy)
     """Подсчет расстояния с помощью расстояния между точками, затем подсчет расстояния в топ5 через googlemapsapi"""
     distances.clear()
     for i in range(len(banks)):
         distances.append(length(latitude,longitude,banks[i]["latitude"], banks[i]["longitude"]))
     distances.sort(reverse=False)
-    print(distances[:7])
+    # print(distances[:7])
     for i in range(0,7):
         try:  # Проверка на существование элемента
             distances[i]
@@ -213,7 +213,7 @@ def get_distance(banks,params,latitude,longitude):
     coordinates = delete_copy(coordinates)
     # print(coordinates)
     spisok_rate=delete_copy(spisok_rate)
-    print(spisok_rate)
+    # print(spisok_rate)
     for i in range(0, 5):
         try:  # Проверка на существование элемента
             names[i]
@@ -235,7 +235,7 @@ def get_distance(banks,params,latitude,longitude):
         spisok_data.sort(key=itemgetter(1))
         for i in range(len(spisok_data)):
             spisok_text.append("🏦<b>%s</b> / <b>%s</b> <a href='%s'>%s</a> (<i>%s</i>км)" % (spisok_data[i][1],spisok_data[i][2],link(spisok_data[i][4],spisok_data[i][5],spisok_data[i][6],spisok_data[i][7]),spisok_data[i][0], spisok_data[i][3]))
-        print("\n".join(spisok_text))
+        # print("\n".join(spisok_text))
         if maxsell not in spisok_text:
             spisok_text.insert(0,maxsell)
         text = "\n".join(spisok_text)

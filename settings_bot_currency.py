@@ -9,4 +9,9 @@ COLLECTION = "telegrambot"
 MONGODB = "telegrambotcurrency"
 mdb = MongoClient(MONGODB_LINK)[COLLECTION][MONGODB]  # переменная для работы с БД
 id_name = 1
-
+# mdb.update_one({"_id":2},{"$set":{"user_id.853615265":1}})
+# mdb.update_one({"_id":2},{"$set":{"user_id.853611111":3}})
+# result=mdb.find_one({"_id":2,"user_id.853615265":{"$exists":True}})
+# print(result["user_id"]["853615265"])
+# if result["user_id"]["853615265"] == 1:
+#     print("yes")
