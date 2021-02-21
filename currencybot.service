@@ -1,0 +1,15 @@
+[Unit]
+Description=Telegram Bot Currency
+After=syslog.target
+After=network.target
+
+[Service]
+User=currency
+Group=currency
+
+WorkingDirectory=/home/currency/currencybot/
+Environment="PYTHONPATH=/home/currency/currencybot/"
+ExecStart=/home/currency/currencybot/.venv/bin/python /home/currency/currencybot/bot_currency.py
+
+[Install]
+WantedBy=multi-user.target
